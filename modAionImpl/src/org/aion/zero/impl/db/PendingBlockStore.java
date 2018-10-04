@@ -39,7 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.aion.base.db.Flushable;
 import org.aion.base.db.IByteArrayKeyValueDatabase;
@@ -83,14 +85,15 @@ public class PendingBlockStore implements Flushable, Closeable {
     private static final Logger LOG = AionLoggerFactory.getLogger(LogEnum.DB.name());
     private static final Logger LOG_SYNC = AionLoggerFactory.getLogger(LogEnum.SYNC.name());
 
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReadWriteLock databaseLock = new ReentrantReadWriteLock();
+    private final Lock internalLock = new ReentrantLock();
 
     // database names
     private static final String LEVEL_DB_NAME = "level";
     private static final String QUEUE_DB_NAME = "queue";
     private static final String INDEX_DB_NAME = "index";
 
-    // data sources
+    // data sources: with access managed by the `databaseLock`
     /**
      * Used to map a level (blockchain height) to the queue identifiers that start with blocks at
      * that height.
@@ -105,7 +108,7 @@ public class PendingBlockStore implements Flushable, Closeable {
     /** Used to maps a block hash to its current queue identifier. */
     private IByteArrayKeyValueDatabase indexSource;
 
-    // tracking the status
+    // tracking the status: with access managed by the `internalLock`
     private Map<ByteArrayWrapper, QueueInfo> status;
     private long maxRequest = 0L, minStatus = Long.MAX_VALUE, maxStatus = 0L;
 
@@ -185,7 +188,8 @@ public class PendingBlockStore implements Flushable, Closeable {
      * @return true if correctly initialized and the databases are open, false otherwise.
      */
     public boolean isOpen() {
-        lock.readLock().lock();
+        internalLock.lock();
+        databaseLock.readLock().lock();
 
         try {
             return status != null
@@ -193,7 +197,8 @@ public class PendingBlockStore implements Flushable, Closeable {
                     && queueSource.isOpen()
                     && indexSource.isOpen();
         } finally {
-            lock.readLock().unlock();
+            databaseLock.readLock().unlock();
+            internalLock.unlock();
         }
     }
 
@@ -265,7 +270,8 @@ public class PendingBlockStore implements Flushable, Closeable {
             return false;
         }
 
-        lock.writeLock().lock();
+        internalLock.lock();
+        databaseLock.writeLock().lock();
 
         try {
             // skip if already stored
@@ -340,7 +346,8 @@ public class PendingBlockStore implements Flushable, Closeable {
                 return false;
             }
         } finally {
-            lock.writeLock().unlock();
+            databaseLock.writeLock().unlock();
+            internalLock.unlock();
         }
     }
 
@@ -350,11 +357,11 @@ public class PendingBlockStore implements Flushable, Closeable {
      */
     @VisibleForTesting
     int getStatusSize() {
-        lock.readLock().lock();
+        internalLock.lock();
         try {
             return status == null ? -1 : status.size();
         } finally {
-            lock.readLock().unlock();
+            internalLock.unlock();
         }
     }
 
@@ -365,7 +372,7 @@ public class PendingBlockStore implements Flushable, Closeable {
      */
     @VisibleForTesting
     QueueInfo getStatusItem(byte[] hash) {
-        lock.readLock().lock();
+        internalLock.lock();
         try {
             if (hash == null) {
                 return null;
@@ -373,7 +380,7 @@ public class PendingBlockStore implements Flushable, Closeable {
                 return status.get(ByteArrayWrapper.wrap(hash));
             }
         } finally {
-            lock.readLock().unlock();
+            internalLock.unlock();
         }
     }
 
@@ -395,7 +402,7 @@ public class PendingBlockStore implements Flushable, Closeable {
             return 0;
         }
 
-        lock.writeLock().lock();
+        databaseLock.writeLock().lock();
 
         try {
             // first block determines the batch queue placement
@@ -411,7 +418,7 @@ public class PendingBlockStore implements Flushable, Closeable {
             // the number of blocks added
             return stored;
         } finally {
-            lock.writeLock().unlock();
+            databaseLock.writeLock().unlock();
         }
     }
 
@@ -503,11 +510,11 @@ public class PendingBlockStore implements Flushable, Closeable {
      */
     @VisibleForTesting
     int getIndexSize() {
-        lock.readLock().lock();
+        databaseLock.readLock().lock();
         try {
             return indexSource.keys().size();
         } finally {
-            lock.readLock().unlock();
+            databaseLock.readLock().unlock();
         }
     }
 
@@ -517,11 +524,11 @@ public class PendingBlockStore implements Flushable, Closeable {
      */
     @VisibleForTesting
     int getLevelSize() {
-        lock.readLock().lock();
+        databaseLock.readLock().lock();
         try {
             return levelDatabase.keys().size();
         } finally {
-            lock.readLock().unlock();
+            databaseLock.readLock().unlock();
         }
     }
 
@@ -531,11 +538,11 @@ public class PendingBlockStore implements Flushable, Closeable {
      */
     @VisibleForTesting
     int getQueueSize() {
-        lock.readLock().lock();
+        databaseLock.readLock().lock();
         try {
             return queueDatabase.keys().size();
         } finally {
-            lock.readLock().unlock();
+            databaseLock.readLock().unlock();
         }
     }
 
@@ -547,7 +554,7 @@ public class PendingBlockStore implements Flushable, Closeable {
      *     queues stored at that level.
      */
     public Map<ByteArrayWrapper, List<AionBlock>> loadBlockRange(long level) {
-        lock.readLock().lock();
+        databaseLock.readLock().lock();
 
         try {
             // get the queue for the given level
@@ -569,7 +576,7 @@ public class PendingBlockStore implements Flushable, Closeable {
 
             return blocks;
         } finally {
-            lock.readLock().unlock();
+            databaseLock.readLock().unlock();
         }
     }
 
@@ -586,7 +593,7 @@ public class PendingBlockStore implements Flushable, Closeable {
             Collection<ByteArrayWrapper> queues,
             Map<ByteArrayWrapper, List<AionBlock>> blocks) {
 
-        lock.writeLock().lock();
+        databaseLock.writeLock().lock();
 
         try {
             // delete imported queues & blocks
@@ -665,7 +672,7 @@ public class PendingBlockStore implements Flushable, Closeable {
             queueSource.flushBatch();
             levelSource.flushBatch();
         } finally {
-            lock.writeLock().unlock();
+            databaseLock.writeLock().unlock();
         }
     }
 
@@ -690,7 +697,7 @@ public class PendingBlockStore implements Flushable, Closeable {
      * @return the next generated base value for the request.
      */
     public long nextBase(long current, long knownBest) {
-        lock.writeLock().lock();
+        internalLock.lock();
 
         try {
             long base = -1;
@@ -762,13 +769,13 @@ public class PendingBlockStore implements Flushable, Closeable {
             // return new base
             return base;
         } finally {
-            lock.writeLock().unlock();
+            internalLock.unlock();
         }
     }
 
     @Override
     public void flush() {
-        lock.writeLock().lock();
+        databaseLock.writeLock().lock();
         try {
             levelSource.flush();
             queueSource.flush();
@@ -776,13 +783,13 @@ public class PendingBlockStore implements Flushable, Closeable {
                 this.indexSource.commit();
             }
         } finally {
-            lock.writeLock().unlock();
+            databaseLock.writeLock().unlock();
         }
     }
 
     @Override
     public void close() {
-        lock.writeLock().lock();
+        databaseLock.writeLock().lock();
 
         try {
             try {
@@ -803,7 +810,7 @@ public class PendingBlockStore implements Flushable, Closeable {
                 LOG.error("Not able to close the pending blocks index database:", e);
             }
         } finally {
-            lock.writeLock().unlock();
+            databaseLock.writeLock().unlock();
         }
     }
 
