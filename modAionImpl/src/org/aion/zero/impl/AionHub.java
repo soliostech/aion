@@ -51,19 +51,24 @@ import org.aion.zero.impl.blockchain.AionPendingStateImpl;
 import org.aion.zero.impl.blockchain.ChainConfiguration;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.core.IAionBlockchain;
+import org.aion.zero.impl.db.AionBlockStore;
 import org.aion.zero.impl.db.AionRepositoryImpl;
 import org.aion.zero.impl.db.RecoveryUtils;
 import org.aion.zero.impl.pow.AionPoW;
+import org.aion.zero.impl.sync.ReceiptsRetrievalVerifier;
 import org.aion.zero.impl.sync.SyncMgr;
 import org.aion.zero.impl.sync.handler.BlockPropagationHandler;
 import org.aion.zero.impl.sync.handler.BroadcastNewBlockHandler;
 import org.aion.zero.impl.sync.handler.BroadcastTxHandler;
+import org.aion.zero.impl.sync.handler.InstrumentedResTxReceiptHandler;
 import org.aion.zero.impl.sync.handler.ReqBlocksBodiesHandler;
 import org.aion.zero.impl.sync.handler.ReqBlocksHeadersHandler;
 import org.aion.zero.impl.sync.handler.ReqStatusHandler;
+import org.aion.zero.impl.sync.handler.ReqTxReceiptHandler;
 import org.aion.zero.impl.sync.handler.ResBlocksBodiesHandler;
 import org.aion.zero.impl.sync.handler.ResBlocksHeadersHandler;
 import org.aion.zero.impl.sync.handler.ResStatusHandler;
+import org.aion.zero.impl.sync.handler.ResTxReceiptHandler;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.types.A0BlockHeader;
 import org.aion.zero.types.AionTransaction;
@@ -105,6 +110,8 @@ public class AionHub {
      * A "cached" block that represents our local best block when the application is first booted.
      */
     private volatile AionBlock startingBlock;
+
+    private ReceiptsRetrievalVerifier receiptsRetrievalVerifier;
 
     /**
      * Initialize as per the <a href=
@@ -181,13 +188,17 @@ public class AionHub {
                         cfgNetP2p.getBootlistSyncOnly(),
                         cfgNetP2p.getErrorTolerance());
 
+        this.receiptsRetrievalVerifier = new ReceiptsRetrievalVerifier(p2pMgr, blockchain);
+
+
         this.syncMgr = SyncMgr.inst();
         this.syncMgr.init(
                 blockchain,
                 p2pMgr,
                 eventMgr,
                 cfg.getSync().getBlocksQueueMax(),
-                cfg.getSync().getShowStatus());
+                cfg.getSync().getShowStatus(),
+                receiptsRetrievalVerifier);
 
         ChainConfiguration chainConfig = new ChainConfiguration();
         this.propHandler =
@@ -205,6 +216,7 @@ public class AionHub {
 
         this.pow = new AionPoW();
         this.pow.init(blockchain, mempool, eventMgr);
+
     }
 
     static AionHub createForTesting(
@@ -231,6 +243,9 @@ public class AionHub {
         cbs.add(new ResBlocksBodiesHandler(syncLOG, syncMgr, p2pMgr));
         cbs.add(new BroadcastTxHandler(syncLOG, mempool, p2pMgr, inSyncOnlyMode));
         cbs.add(new BroadcastNewBlockHandler(syncLOG, propHandler, p2pMgr));
+//        cbs.add(new ResTxReceiptHandler(repository.getTransactionStore(), (AionBlockStore) getBlockStore()));
+        cbs.add(new InstrumentedResTxReceiptHandler((AionBlockStore) getBlockStore(), receiptsRetrievalVerifier, this.cfg.getDatabasePath()));
+        cbs.add(new ReqTxReceiptHandler(p2pMgr, blockchain));
         this.p2pMgr.register(cbs);
     }
 

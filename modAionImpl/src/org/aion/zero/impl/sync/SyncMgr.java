@@ -53,11 +53,12 @@ import org.aion.zero.impl.AionBlockchainImpl;
 import org.aion.zero.impl.blockchain.ChainConfiguration;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.types.A0BlockHeader;
+import org.aion.zero.types.AionTxReceipt;
 import org.apache.commons.collections4.map.LRUMap;
 import org.slf4j.Logger;
 
 /** @author chris */
-public final class SyncMgr {
+public class SyncMgr {
 
     // interval - show status
     private static final int INTERVAL_SHOW_STATUS = 10000;
@@ -168,7 +169,8 @@ public final class SyncMgr {
             final IP2pMgr _p2pMgr,
             final IEventMgr _evtMgr,
             final int _blocksQueueMax,
-            final boolean _showStatus) {
+            final boolean _showStatus,
+            final ReceiptsRetrievalVerifier rrv) {
         p2pMgr = _p2pMgr;
         chain = _chain;
         evtMgr = _evtMgr;
@@ -200,7 +202,8 @@ public final class SyncMgr {
                                 downloadedBlocks,
                                 importedBlockHashes,
                                 peerStates,
-                                log),
+                                log,
+                                rrv),
                         "sync-ib");
         syncIb.start();
         syncGs = new Thread(new TaskGetStatus(start, p2pMgr, log), "sync-gs");

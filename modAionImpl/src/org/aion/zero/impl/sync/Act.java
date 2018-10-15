@@ -53,4 +53,8 @@ public final class Act {
     public static final byte BROADCAST_TX = 6;
 
     public static final byte BROADCAST_BLOCK = 7;
+
+    public static final byte REQ_TX_RECEIPT_HEADERS = 8; // TODO ??
+
+    public static final byte RES_TX_RECEIPT_HEADERS = 9; // TODO ??
 }

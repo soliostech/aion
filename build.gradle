@@ -11,7 +11,7 @@ def dirWorkspace = "./"
 def dirPack = "./pack"
 def dirLibFile = "lib"
 def dirModFile ="./mod"
-def javaHome = "$System.env.JAVA_HOME"
+def javaHome = "/home/sergiu/opt/jdk-10.0.1"
 def vmVersion = "0.3.1"
 def dirRuntimeJars = 'jars' // we'll store mod and lib stuff in here
 

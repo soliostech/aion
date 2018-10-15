@@ -60,6 +60,7 @@ public class TransactionStore<
         lock.writeLock().lock();
 
         try {
+
             byte[] txHash = tx.getReceipt().getTransaction().getHash();
 
             List<INFO> existingInfos = null;

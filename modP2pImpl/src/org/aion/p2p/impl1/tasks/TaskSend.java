@@ -143,6 +143,7 @@ public class TaskSend implements Runnable {
                 p2pLOG.warn("task-send-reached thread queue limit", e);
             } catch (Exception e) {
                 if (p2pLOG.isDebugEnabled()) {
+                    e.printStackTrace();
                     p2pLOG.debug("TaskSend exception {}", e.getMessage());
                 }
             }

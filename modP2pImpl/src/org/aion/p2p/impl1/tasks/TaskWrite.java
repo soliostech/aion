@@ -22,15 +22,16 @@
  */
 package org.aion.p2p.impl1.tasks;
 
-import static org.aion.p2p.impl1.P2pMgr.p2pLOG;
+import org.aion.p2p.Header;
+import org.aion.p2p.IP2pMgr;
+import org.aion.p2p.Msg;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
-import org.aion.p2p.Header;
-import org.aion.p2p.IP2pMgr;
-import org.aion.p2p.Msg;
+
+import static org.aion.p2p.impl1.P2pMgr.p2pLOG;
 
 /** @author chris */
 public class TaskWrite implements Runnable {
@@ -47,6 +48,8 @@ public class TaskWrite implements Runnable {
             final Msg _msg,
             final ChannelBuffer _cb,
             final IP2pMgr _p2pMgr) {
+        com.google.common.base.Preconditions.checkNotNull(_msg);
+
         this.nodeShortId = _nodeShortId;
         this.sc = _sc;
         this.msg = _msg;
@@ -117,8 +120,9 @@ public class TaskWrite implements Runnable {
                     channelBuffer.setClosed();
                 }
             }
-        } catch (Exception e) {
-            p2pLOG.error("TaskWrite exception {}", e.getMessage());
+        } catch (/*Exception*/ InterruptedException e) {
+//            p2pLOG.error("TaskWrite exception {}", e.getMessage());
+            e.printStackTrace();
         } finally {
             channelBuffer.lock.unlock();
         }
