@@ -51,7 +51,7 @@ public class PeerStateMgr {
     private final Logger log;
     private final IP2pMgr p2p;
     private LimitedQueue<Integer> lockedStates;
-    private final AtomicInteger limit = new AtomicInteger(1);
+    private final AtomicInteger limit = new AtomicInteger(3);
 
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
@@ -110,7 +110,7 @@ public class PeerStateMgr {
                         .filter(n -> isTimelyRequest(now, n))
                         .findAny();
 
-        limit.set(getActiveNodes().size() / 2 + 1);
+        limit.set(getActiveNodes().size() / 2);
 
         if (node.isPresent()) {
             INode n = node.get();
