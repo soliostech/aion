@@ -25,11 +25,11 @@ package org.aion.zero.impl.sync;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import org.aion.p2p.INode;
 import org.aion.p2p.IP2pMgr;
@@ -50,12 +50,12 @@ public class PeerStateMgr {
 
     private final Logger log;
     private final IP2pMgr p2p;
-    private Set<Integer> lockedStates;
+    private Queue<Integer> lockedStates;
 
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
         this.peerStates = new ConcurrentHashMap<>();
-        this.lockedStates = new HashSet<>();
+        lockedStates = new LimitedQueue<>(3);
         this.log = log;
     }
 
@@ -102,9 +102,7 @@ public class PeerStateMgr {
             final long now, BigInteger td) {
         // filter nodes by total difficulty
         Optional<INode> node =
-                this.p2p
-                        .getActiveNodes()
-                        .values()
+                getActiveNodes()
                         .parallelStream()
                         .filter(n -> !lockedStates.contains(n.getIdHash()))
                         .filter(n -> isAdequateTotalDifficulty(n, td))
@@ -203,6 +201,31 @@ public class PeerStateMgr {
 
         public PeerState getPeerState() {
             return peerState;
+        }
+    }
+
+    private static class LimitedQueue<E> extends LinkedList<E> {
+        private int limit;
+
+        public LimitedQueue(int limit) {
+            this.limit = limit;
+        }
+
+        public void setLimit(int limit) {
+            this.limit = limit;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
+        @Override
+        public boolean add(E o) {
+            super.add(o);
+            while (size() > limit) {
+                super.remove();
+            }
+            return true;
         }
     }
 }
