@@ -73,7 +73,7 @@ final class TaskImportBlocks implements Runnable {
 
     private final Map<ByteArrayWrapper, Object> importedBlockHashes;
 
-    private final Map<Integer, PeerState> peerStates;
+    private final PeerStateMgr peerStates;
 
     private final Logger log;
 
@@ -86,7 +86,7 @@ final class TaskImportBlocks implements Runnable {
             final SyncStats _stats,
             final BlockingQueue<BlocksWrapper> _downloadedBlocks,
             final Map<ByteArrayWrapper, Object> _importedBlockHashes,
-            final Map<Integer, PeerState> _peerStates,
+            final PeerStateMgr _peerStates,
             final Logger _log) {
         this.chain = _chain;
         this.start = _start;
@@ -116,7 +116,7 @@ final class TaskImportBlocks implements Runnable {
                 return;
             }
 
-            PeerState peerState = peerStates.get(bw.getNodeIdHash());
+            PeerState peerState = peerStates.getForImport(bw.getNodeIdHash());
             if (peerState == null) {
                 // ignoring these blocks
                 log.warn("Peer {} sent blocks that were not requested.", bw.getDisplayId());
@@ -174,13 +174,13 @@ final class TaskImportBlocks implements Runnable {
             Map<ByteArrayWrapper, Object> imported) {
         if (chain.hasPruneRestriction()) {
             // filter out restricted blocks if prune restrictions enabled
-            return blocks.stream()
+            return blocks.parallelStream()
                     .filter(b -> isNotImported(b, imported))
                     .filter(b -> isNotRestricted(b, chain))
                     .collect(Collectors.toList());
         } else {
             // filter out only imported blocks
-            return blocks.stream()
+            return blocks.parallelStream()
                     .filter(b -> isNotImported(b, imported))
                     .collect(Collectors.toList());
         }
@@ -501,7 +501,7 @@ final class TaskImportBlocks implements Runnable {
      * @return the number of states that satisfy the condition above.
      */
     static long countStates(long best, Mode mode, Collection<PeerState> states) {
-        return states.stream()
+        return states.parallelStream()
                 .filter(s -> s.getLastBestBlock() > best)
                 .filter(s -> s.getMode() == mode)
                 .count();
