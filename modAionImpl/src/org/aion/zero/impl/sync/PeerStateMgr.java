@@ -29,8 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.aion.p2p.INode;
 import org.aion.p2p.IP2pMgr;
 import org.aion.p2p.Msg;
@@ -50,12 +50,13 @@ public class PeerStateMgr {
 
     private final Logger log;
     private final IP2pMgr p2p;
-    private Queue<Integer> lockedStates;
+    private LimitedQueue<Integer> lockedStates;
+    private final AtomicInteger limit = new AtomicInteger(1);
 
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
         this.peerStates = new ConcurrentHashMap<>();
-        lockedStates = new LimitedQueue<>(3);
+        lockedStates = new LimitedQueue<>(limit);
         this.log = log;
     }
 
@@ -108,6 +109,8 @@ public class PeerStateMgr {
                         .filter(n -> isAdequateTotalDifficulty(n, td))
                         .filter(n -> isTimelyRequest(now, n))
                         .findAny();
+
+        limit.set(getActiveNodes().size() / 2 + 1);
 
         if (node.isPresent()) {
             INode n = node.get();
@@ -205,24 +208,17 @@ public class PeerStateMgr {
     }
 
     private static class LimitedQueue<E> extends LinkedList<E> {
-        private int limit;
+        private AtomicInteger limit;
 
-        public LimitedQueue(int limit) {
+        public LimitedQueue(AtomicInteger limit) {
             this.limit = limit;
-        }
-
-        public void setLimit(int limit) {
-            this.limit = limit;
-        }
-
-        public int getLimit() {
-            return limit;
         }
 
         @Override
         public boolean add(E o) {
             super.add(o);
-            while (size() > limit) {
+            int l = limit.get();
+            while (size() > l) {
                 super.remove();
             }
             return true;
