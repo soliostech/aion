@@ -25,12 +25,15 @@ package org.aion.zero.impl.sync;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 import org.aion.p2p.INode;
 import org.aion.p2p.IP2pMgr;
 import org.aion.p2p.Msg;
@@ -50,13 +53,12 @@ public class PeerStateMgr {
 
     private final Logger log;
     private final IP2pMgr p2p;
-    private LimitedQueue<Integer> lockedStates;
-    private final AtomicInteger limit = new AtomicInteger(3);
+    private final SortedSet<NodeState> lightningStates;
 
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
         this.peerStates = new ConcurrentHashMap<>();
-        lockedStates = new LimitedQueue<>(limit);
+        this.lightningStates = new ConcurrentSkipListSet<>();
         this.log = log;
     }
 
@@ -93,32 +95,54 @@ public class PeerStateMgr {
 
     /** Checks that the required time has passed since the last request. */
     private boolean isTimelyRequest(long now, INode n) {
-        return (now - EXPECTED_TIME_DIFF)
-                > peerStates
-                        .computeIfAbsent(n.getIdHash(), k -> new PeerState())
-                        .getLastHeaderRequest();
+        PeerState state = peerStates.computeIfAbsent(n.getIdHash(), k -> new PeerState());
+        return (now - EXPECTED_TIME_DIFF) > state.getLastHeaderRequest();
     }
 
-    public synchronized Optional<NodeState> getAnyNodeForHeaderRequest(
-            final long now, BigInteger td) {
-        // filter nodes by total difficulty
-        Optional<INode> node =
-                getActiveNodes()
-                        .parallelStream()
-                        .filter(n -> !lockedStates.contains(n.getIdHash()))
-                        .filter(n -> isAdequateTotalDifficulty(n, td))
-                        .filter(n -> isTimelyRequest(now, n))
-                        .findAny();
+    public Optional<NodeState> getAnyNodeForHeaderRequest(
+            final long now, BigInteger td, Random random) {
 
-        limit.set(getActiveNodes().size() / 2);
+        NodeState nodeState = lightningStates.isEmpty() ? null : lightningStates.first();
+        boolean removed = nodeState != null && lightningStates.remove(nodeState);
 
-        if (node.isPresent()) {
-            INode n = node.get();
-            // lock the peer state
-            lockedStates.add(n.getIdHash());
-            return Optional.of(new NodeState(n, peerStates.get(n.getIdHash())));
+        if (removed) {
+            return Optional.of(nodeState);
         } else {
-            return Optional.empty();
+            // filter nodes by total difficulty
+            List<INode> filtered =
+                    getActiveNodes()
+                            .parallelStream()
+                            .filter(n -> isAdequateTotalDifficulty(n, td))
+                            .filter(n -> isTimelyRequest(now, n))
+                            .collect(Collectors.toList());
+
+            if (filtered.isEmpty()) {
+                return Optional.empty();
+            } else {
+                INode node = filtered.remove(random.nextInt(filtered.size()));
+                PeerState state = peerStates.get(node.getIdHash());
+                if (state != null) {
+                    nodeState = new NodeState(node, peerStates.get(node.getIdHash()));
+                } else {
+                    nodeState = null;
+                }
+
+                if (lightningStates.isEmpty()) {
+                    populateLightningStates(filtered);
+                }
+
+                return Optional.ofNullable(nodeState);
+            }
+        }
+    }
+
+    private void populateLightningStates(List<INode> nodesFiltered) {
+        // TODO: maybe make separate thread
+        for (INode node : nodesFiltered) {
+            PeerState state = peerStates.get(node.getIdHash());
+            if (state != null && state.isInLightningMode()) {
+                lightningStates.add(new NodeState(node, state));
+            }
         }
     }
 
@@ -153,14 +177,12 @@ public class PeerStateMgr {
         if (!sorted.isEmpty()) {
             sorted.sort(
                     (n1, n2) ->
-                            ((Long) n2.getPeerState().getBase())
-                                    .compareTo(n1.getPeerState().getBase()));
+                            Long.compare(n2.getPeerState().getBase(), n1.getPeerState().getBase()));
 
             StringBuilder sb = new StringBuilder();
             sb.append("\n");
             sb.append(
-                    String.format(
-                            "======================================================================== sync-status =========================================================================\n"));
+                    "======================================================================== sync-status =========================================================================\n");
             sb.append(
                     String.format(
                             "%9s %16s %17s %8s %16s %2s %16s\n",
@@ -189,10 +211,11 @@ public class PeerStateMgr {
     }
 
     /** Contains both a {@link INode} and it's associated {@link PeerState}. */
-    public static class NodeState {
-        INode node;
-        PeerState peerState;
+    public static class NodeState implements Comparable<NodeState> {
+        final INode node;
+        final PeerState peerState;
 
+        // TODO: document that peerState cannot be null
         NodeState(INode node, PeerState peerState) {
             this.node = node;
             this.peerState = peerState;
@@ -205,23 +228,32 @@ public class PeerStateMgr {
         public PeerState getPeerState() {
             return peerState;
         }
-    }
 
-    private static class LimitedQueue<E> extends LinkedList<E> {
-        private AtomicInteger limit;
-
-        public LimitedQueue(AtomicInteger limit) {
-            this.limit = limit;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            NodeState nodeState = (NodeState) o;
+            return Objects.equals(node, nodeState.node)
+                    && Objects.equals(peerState, nodeState.peerState);
         }
 
         @Override
-        public boolean add(E o) {
-            super.add(o);
-            int l = limit.get();
-            while (size() > l) {
-                super.remove();
+        public int hashCode() {
+
+            return Objects.hash(node, peerState);
+        }
+
+        @Override
+        public int compareTo(NodeState other) {
+            if (other == null) {
+                return 1;
             }
-            return true;
+            return Long.compare(peerState.getBase(), other.peerState.getBase());
         }
     }
 }

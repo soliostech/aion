@@ -51,7 +51,11 @@ final class TaskGetHeaders implements Runnable {
 
     private final Random random = new Random(System.currentTimeMillis());
 
-    TaskGetHeaders(long selfNumber, BigInteger selfTd, PeerStateMgr peerStateMgr, Logger log) {
+    TaskGetHeaders(
+            long selfNumber,
+            BigInteger selfTd,
+            PeerStateMgr peerStateMgr,
+            Logger log) {
         this.selfNumber = selfNumber;
         this.selfTd = selfTd;
         this.peerStateMgr = peerStateMgr;
@@ -62,7 +66,8 @@ final class TaskGetHeaders implements Runnable {
     public void run() {
         // filter nodes by total difficulty
         long now = System.currentTimeMillis();
-        Optional<NodeState> anyFiltered = peerStateMgr.getAnyNodeForHeaderRequest(now, selfTd);
+        Optional<NodeState> anyFiltered =
+                peerStateMgr.getAnyNodeForHeaderRequest(now, selfTd, random);
 
         if (!anyFiltered.isPresent()) {
             if (log.isDebugEnabled()) {
