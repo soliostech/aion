@@ -140,7 +140,7 @@ public class PeerStateMgr {
         // TODO: maybe make separate thread
         for (INode node : nodesFiltered) {
             PeerState state = peerStates.get(node.getIdHash());
-            if (state != null && state.isInLightningMode()) {
+            if (state != null && state.isInLightningMode() && state.getState() != State.HEADERS_REQUESTED) {
                 lightningStates.add(new NodeState(node, state));
             }
         }
