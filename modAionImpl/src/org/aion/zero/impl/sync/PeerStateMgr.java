@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Random;
-import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.aion.p2p.INode;
 import org.aion.p2p.IP2pMgr;
@@ -53,12 +53,12 @@ public class PeerStateMgr {
 
     private final Logger log;
     private final IP2pMgr p2p;
-    private final SortedSet<NodeState> lightningStates;
+    private final Queue<NodeState> lightningStates;
 
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
         this.peerStates = new ConcurrentHashMap<>();
-        this.lightningStates = new ConcurrentSkipListSet<>();
+        this.lightningStates = new ConcurrentLinkedQueue();
         this.log = log;
     }
 
@@ -102,10 +102,9 @@ public class PeerStateMgr {
     public Optional<NodeState> getAnyNodeForHeaderRequest(
             final long now, BigInteger td, Random random) {
 
-        NodeState nodeState = lightningStates.isEmpty() ? null : lightningStates.first();
-        boolean removed = nodeState != null && lightningStates.remove(nodeState);
+        NodeState nodeState = lightningStates.poll();
 
-        if (removed) {
+        if (nodeState != null) {
             return Optional.of(nodeState);
         } else {
             // filter nodes by total difficulty
@@ -140,8 +139,10 @@ public class PeerStateMgr {
         // TODO: maybe make separate thread
         for (INode node : nodesFiltered) {
             PeerState state = peerStates.get(node.getIdHash());
-            if (state != null && state.isInLightningMode() && state.getState() != State.HEADERS_REQUESTED) {
-                lightningStates.add(new NodeState(node, state));
+            if (state != null
+                    && state.isInLightningMode()
+                    && state.getState() != State.HEADERS_REQUESTED) {
+                lightningStates.offer(new NodeState(node, state));
             }
         }
     }
