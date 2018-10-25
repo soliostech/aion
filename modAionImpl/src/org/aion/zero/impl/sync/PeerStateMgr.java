@@ -25,14 +25,18 @@ package org.aion.zero.impl.sync;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.aion.p2p.INode;
 import org.aion.p2p.IP2pMgr;
@@ -55,11 +59,50 @@ public class PeerStateMgr {
     private final IP2pMgr p2p;
     private final Queue<NodeState> lightningStates;
 
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Set<Integer> booked;
+
     public PeerStateMgr(IP2pMgr p2p, Logger log) {
         this.p2p = p2p;
         this.peerStates = new ConcurrentHashMap<>();
         this.lightningStates = new ConcurrentLinkedQueue();
+        this.booked = new HashSet<>();
         this.log = log;
+    }
+
+    private boolean isBooked(int id) {
+        lock.readLock().lock();
+
+        try {
+            return booked.contains(id);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    private boolean tryBooking(int peerId) {
+        lock.writeLock().lock();
+
+        try {
+            if (isBooked(peerId)) {
+                return false;
+            } else {
+                booked.add(peerId);
+                return true;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean releaseBooking(int peerId) {
+        lock.writeLock().lock();
+
+        try {
+            return booked.remove(peerId);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -99,8 +142,7 @@ public class PeerStateMgr {
         return (now - EXPECTED_TIME_DIFF) > state.getLastHeaderRequest();
     }
 
-    public Optional<NodeState> getAnyNodeForHeaderRequest(
-            final long now, BigInteger td, Random random) {
+    private NodeState getAnyNodeForHeaderRequest(final long now, BigInteger td, Random random) {
 
         NodeState nodeState = lightningStates.poll();
 
@@ -108,18 +150,19 @@ public class PeerStateMgr {
         if (nodeState != null
                 && nodeState.getPeerState().isInLightningMode()
                 && nodeState.getPeerState().getState() != State.HEADERS_REQUESTED) {
-            return Optional.of(nodeState);
+            return nodeState;
         } else {
             // filter nodes by total difficulty
             List<INode> filtered =
                     getActiveNodes()
                             .parallelStream()
+                            .filter(n -> !isBooked(n.getIdHash()))
                             .filter(n -> isAdequateTotalDifficulty(n, td))
                             .filter(n -> isTimelyRequest(now, n))
                             .collect(Collectors.toList());
 
             if (filtered.isEmpty()) {
-                return Optional.empty();
+                return null;
             } else {
                 INode node = filtered.remove(random.nextInt(filtered.size()));
                 PeerState state = peerStates.get(node.getIdHash());
@@ -133,7 +176,22 @@ public class PeerStateMgr {
                     populateLightningStates(filtered);
                 }
 
-                return Optional.ofNullable(nodeState);
+                return nodeState;
+            }
+        }
+    }
+
+    public Optional<NodeState> bookAnyNodeForHeaderRequest(long now, BigInteger td, Random random) {
+        NodeState ns = getAnyNodeForHeaderRequest(now, td, random);
+        if (ns != null && tryBooking(ns.getNode().getPeerId())) {
+            return Optional.of(ns);
+        } else {
+            // try a second time
+            ns = getAnyNodeForHeaderRequest(now, td, random);
+            if (ns != null && tryBooking(ns.getNode().getPeerId())) {
+                return Optional.of(ns);
+            } else {
+                return Optional.empty();
             }
         }
     }
