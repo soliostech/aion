@@ -89,6 +89,12 @@ public class PeerState {
     private long lastBestBlock = 0;
     private long lastHeaderRequest;
 
+    /** Creates a default peer state with mode = NORMAL and state = INITIAL. */
+    public PeerState() {
+        this.mode = Mode.NORMAL;
+        this.state = State.INITIAL;
+    }
+
     /** Creates a new peer state. */
     public PeerState(Mode mode, long base) {
         this.mode = mode;
@@ -136,6 +142,15 @@ public class PeerState {
      */
     public boolean isInFastMode() {
         return mode == Mode.LIGHTNING || mode == Mode.THUNDER;
+    }
+
+    /**
+     * Method for checking if the state is in {@link Mode#LIGHTNING} mode.
+     *
+     * @return {@code true} when the state is in LIGHTNING mode, {@code false} otherwise.
+     */
+    public boolean isInLightningMode() {
+        return mode == Mode.LIGHTNING;
     }
 
     public long getBase() {

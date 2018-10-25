@@ -25,11 +25,14 @@ package org.aion.zero.impl.sync;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.aion.p2p.INode;
-import org.aion.p2p.IP2pMgr;
 import org.aion.zero.impl.sync.msg.ReqStatus;
 import org.slf4j.Logger;
 
-/** @author chris long run */
+/**
+ * long run
+ *
+ * @author chris
+ */
 final class TaskGetStatus implements Runnable {
 
     private static final int interval = 2000; // two seconds
@@ -38,18 +41,18 @@ final class TaskGetStatus implements Runnable {
 
     private final AtomicBoolean run;
 
-    private final IP2pMgr p2p;
+    private final PeerStateMgr peerStateMgr;
 
     private final Logger log;
 
     /**
      * @param _run AtomicBoolean
-     * @param _p2p IP2pMgr
+     * @param _peerStateMgr PeerStateMgr
      * @param _log Logger
      */
-    TaskGetStatus(final AtomicBoolean _run, final IP2pMgr _p2p, final Logger _log) {
+    TaskGetStatus(final AtomicBoolean _run, final PeerStateMgr _peerStateMgr, final Logger _log) {
         this.run = _run;
-        this.p2p = _p2p;
+        this.peerStateMgr = _peerStateMgr;
         this.log = _log;
     }
 
@@ -58,9 +61,9 @@ final class TaskGetStatus implements Runnable {
         while (this.run.get()) {
             try {
                 // Set<Integer> ids = new HashSet<>(p2p.getActiveNodes().keySet());
-                for (INode n : p2p.getActiveNodes().values()) {
-                    // System.out.println("requesting-status from-node=" + n.getIdShort());
-                    p2p.send(n.getIdHash(), n.getIdShort(), reqStatus);
+                for (INode n : peerStateMgr.getActiveNodes()) {
+                    // System.out.println("requesting-status from-node=" + node.getIdShort());
+                    peerStateMgr.send(n.getIdHash(), n.getIdShort(), reqStatus);
                 }
                 Thread.sleep(interval);
             } catch (Exception e) {

@@ -65,7 +65,7 @@ public final class SyncMgr {
     private static final Logger log = AionLoggerFactory.getLogger(LogEnum.SYNC.name());
     private final NetworkStatus networkStatus = new NetworkStatus();
     // peer syncing states
-    private final Map<Integer, PeerState> peerStates = new ConcurrentHashMap<>();
+    private PeerStateMgr peerStateMgr;
     // store the downloaded headers from network
     private final BlockingQueue<HeadersWrapper> downloadedHeaders = new LinkedBlockingQueue<>();
     // store the headers whose bodies have been requested from corresponding peer
@@ -177,17 +177,18 @@ public final class SyncMgr {
 
         blockHeaderValidator = new ChainConfiguration().createBlockHeaderValidator();
 
+        peerStateMgr = new PeerStateMgr(p2pMgr, log);
+
         long selfBest = chain.getBestBlock().getNumber();
         SyncStats stats = new SyncStats(selfBest);
 
         syncGb =
                 new Thread(
                         new TaskGetBodies(
-                                p2pMgr,
                                 start,
                                 downloadedHeaders,
                                 headersWithBodiesRequested,
-                                peerStates,
+                                peerStateMgr,
                                 log),
                         "sync-gb");
         syncGb.start();
@@ -199,11 +200,11 @@ public final class SyncMgr {
                                 stats,
                                 downloadedBlocks,
                                 importedBlockHashes,
-                                peerStates,
+                                peerStateMgr,
                                 log),
                         "sync-ib");
         syncIb.start();
-        syncGs = new Thread(new TaskGetStatus(start, p2pMgr, log), "sync-gs");
+        syncGs = new Thread(new TaskGetStatus(start, peerStateMgr, log), "sync-gs");
         syncGs.start();
 
         if (_showStatus) {
@@ -217,8 +218,7 @@ public final class SyncMgr {
                                     stats,
                                     false,
                                     "", // TODO: fully remove
-                                    this.p2pMgr,
-                                    this.peerStates,
+                                    peerStateMgr,
                                     AionLoggerFactory.getLogger(LogEnum.P2P.name())),
                             "sync-ss");
             syncSs.start();
@@ -242,11 +242,7 @@ public final class SyncMgr {
             if (!workers.isShutdown()) {
                 workers.submit(
                         new TaskGetHeaders(
-                                p2pMgr,
-                                chain.getBestBlock().getNumber(),
-                                _selfTd,
-                                peerStates,
-                                log));
+                                chain.getBestBlock().getNumber(), _selfTd, peerStateMgr, log));
                 queueFull.set(false);
             }
         }
@@ -391,10 +387,11 @@ public final class SyncMgr {
     }
 
     public Map<Integer, PeerState> getPeerStates() {
-        return new HashMap<>(this.peerStates);
+        return new HashMap<>(this.peerStateMgr.map());
     }
 
     private static final class AionSyncMgrHolder {
+
         static final SyncMgr INSTANCE = new SyncMgr();
     }
 }
