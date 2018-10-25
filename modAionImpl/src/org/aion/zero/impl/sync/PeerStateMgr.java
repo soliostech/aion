@@ -156,7 +156,7 @@ public class PeerStateMgr {
             List<INode> filtered =
                     getActiveNodes()
                             .parallelStream()
-                            .filter(n -> !isBooked(n.getIdHash()))
+                            //                            .filter(n -> !isBooked(n.getIdHash()))
                             .filter(n -> isAdequateTotalDifficulty(n, td))
                             .filter(n -> isTimelyRequest(now, n))
                             .collect(Collectors.toList());
@@ -181,18 +181,46 @@ public class PeerStateMgr {
         }
     }
 
+    private boolean isNotLightningRequest(INode n) {
+        PeerState state = peerStates.get(n.getIdHash());
+        return state == null || !state.isInLightningMode();
+    }
+
+    private NodeState getNonLightningForRequest(final long now, BigInteger td, Random random) {
+        NodeState nodeState;
+        // filter nodes by total difficulty
+        List<INode> filtered =
+                getActiveNodes()
+                        .parallelStream()
+                        .filter(n -> isAdequateTotalDifficulty(n, td))
+                        .filter(n -> isTimelyRequest(now, n))
+                        .filter(n -> isNotLightningRequest(n))
+                        .collect(Collectors.toList());
+
+        if (filtered.isEmpty()) {
+            return null;
+        } else {
+            INode node = filtered.remove(random.nextInt(filtered.size()));
+            PeerState state = peerStates.get(node.getIdHash());
+            if (state != null) {
+                nodeState = new NodeState(node, peerStates.get(node.getIdHash()));
+            } else {
+                nodeState = null;
+            }
+            return nodeState;
+        }
+    }
+
     public Optional<NodeState> bookAnyNodeForHeaderRequest(long now, BigInteger td, Random random) {
-        NodeState ns = getAnyNodeForHeaderRequest(now, td, random);
-        if (ns != null && tryBooking(ns.getNode().getPeerId())) {
+        NodeState ns;
+
+        ns = getAnyNodeForHeaderRequest(now, td, random);
+        if (ns != null
+                && (!ns.getPeerState().isInLightningMode()
+                        || tryBooking(ns.getNode().getPeerId()))) {
             return Optional.of(ns);
         } else {
-            // try a second time
-            ns = getAnyNodeForHeaderRequest(now, td, random);
-            if (ns != null && tryBooking(ns.getNode().getPeerId())) {
-                return Optional.of(ns);
-            } else {
-                return Optional.empty();
-            }
+            return Optional.ofNullable(getNonLightningForRequest(now, td, random));
         }
     }
 
