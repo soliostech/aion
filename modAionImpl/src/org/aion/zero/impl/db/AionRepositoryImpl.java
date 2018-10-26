@@ -807,49 +807,19 @@ public class AionRepositoryImpl
     }
 
     /**
-     * Retrieves the value for the given trie node from the state database.
+     * Retrieves the value for a given node from the database associated with the given type.
      *
-     * @param key the hash key of the node to be retrieved
+     * @param key the key of the node to be retrieved
+     * @param dbType the database where the key should be found
      * @return the {@code byte} array value associated with the given key or {@code null} when the
      *     key cannot be found in the database.
-     * @throws IllegalArgumentException if the given key is null
+     * @throws IllegalArgumentException if the given key is null or the database type is not
+     *     supported
      */
-    public byte[] getStateTrieValue(byte[] key) {
-        Optional<byte[]> value = stateDatabase.get(key);
-        if (value.isPresent()) {
-            return value.get();
-        } else {
-            return null;
-        }
-    }
+    public byte[] getTrieNode(byte[] key, TrieDatabase dbType) {
+        IByteArrayKeyValueDatabase db = selectDatabase(dbType);
 
-    /**
-     * Retrieves the value for the given trie node from the details database.
-     *
-     * @param key the hash key of the node to be retrieved
-     * @return the {@code byte} array value associated with the given key or {@code null} when the
-     *     key cannot be found in the database.
-     * @throws IllegalArgumentException if the given key is null
-     */
-    public byte[] getDetailsTrieValue(byte[] key) {
-        Optional<byte[]> value = detailsDatabase.get(key);
-        if (value.isPresent()) {
-            return value.get();
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Retrieves the value for the given trie node from the storage database.
-     *
-     * @param key the hash key of the node to be retrieved
-     * @return the {@code byte} array value associated with the given key or {@code null} when the
-     *     key cannot be found in the database.
-     * @throws IllegalArgumentException if the given key is null
-     */
-    public byte[] getStorageTrieValue(byte[] key) {
-        Optional<byte[]> value = storageDatabase.get(key);
+        Optional<byte[]> value = db.get(key);
         if (value.isPresent()) {
             return value.get();
         } else {
@@ -863,7 +833,8 @@ public class AionRepositoryImpl
      * @param key the hash key of the trie node to be imported
      * @param value the value of the trie node to be imported
      * @param dbType the database where the key-value pair should be stored
-     * @throws IllegalArgumentException if the given key is null
+     * @throws IllegalArgumentException if the given key is null or the database type is not
+     *     supported
      * @return a {@link TrieNodeResult} indicating the success or failure of the import operation
      */
     public TrieNodeResult importTrieNode(byte[] key, byte[] value, TrieDatabase dbType) {
@@ -892,8 +863,10 @@ public class AionRepositoryImpl
             case STORAGE:
                 return storageDatabase;
             case STATE:
-            default: // to ensure that a db is always returned
                 return stateDatabase;
+            default:
+                throw new IllegalArgumentException(
+                        "The database type " + dbType.toString() + " is not supported.");
         }
     }
 }

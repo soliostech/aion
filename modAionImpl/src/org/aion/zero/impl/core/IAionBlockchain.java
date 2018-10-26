@@ -74,7 +74,8 @@ public interface IAionBlockchain
      * @param dbType the database where the key should be found
      * @return the {@code byte} array value associated with the given key or {@code null} when the
      *     key cannot be found in the database.
-     * @throws IllegalArgumentException if the given key is null
+     * @throws IllegalArgumentException if the given key is null or the database type is not
+     *     supported
      */
     byte[] getTrieNode(byte[] key, TrieDatabase dbType);
 }
