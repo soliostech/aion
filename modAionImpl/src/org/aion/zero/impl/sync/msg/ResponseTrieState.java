@@ -33,26 +33,36 @@ import org.aion.zero.impl.sync.Act;
 import org.aion.zero.impl.sync.TrieDatabase;
 
 /**
- * Response message for a trie state node from a specific blockchain database.
+ * Response message for a trie node node from a specific blockchain database.
  *
  * @author Alexandra Roatis
  */
 public final class ResponseTrieState extends Msg {
+    private final TrieDatabase dbType;
+    private final byte[] nodeKey; // 32 bytes
+    private final byte[] nodeValue; // TODO: min/max bytes
 
-    private final TrieDatabase type;
-
-    /** the trie node key */
-    private final byte[] hash; // 32 bytes
-
-    private final byte[] value; // TODO: min/max bytes
-
-    public ResponseTrieState(final byte[] hash, final byte[] value, final TrieDatabase type) {
+    /**
+     * Constructor for trie node responses.
+     *
+     * @param nodeKey the key of the requested trie node
+     * @param nodeValue the value stored for the requested trie node
+     * @param dbType the blockchain database in which the key should be found
+     */
+    public ResponseTrieState(
+            final byte[] nodeKey, final byte[] nodeValue, final TrieDatabase dbType) {
         super(Ver.V1, Ctrl.SYNC, Act.RESPONSE_TRIE_STATE);
-        this.hash = hash;
-        this.value = value;
-        this.type = type;
+        this.nodeKey = nodeKey;
+        this.nodeValue = nodeValue;
+        this.dbType = dbType;
     }
 
+    /**
+     * Decodes a message into a trie node response.
+     *
+     * @param message a {@code byte} array representing a response to a trie node request.
+     * @return the decoded trie node response.
+     */
     public static ResponseTrieState decode(final byte[] message) {
         if (message == null) {
             return null;
@@ -87,8 +97,35 @@ public final class ResponseTrieState extends Msg {
     @Override
     public byte[] encode() {
         return RLP.encodeList(
-                RLP.encodeString(type.toString()),
-                RLP.encodeElement(hash),
-                RLP.encodeElement(value));
+                RLP.encodeString(dbType.toString()),
+                RLP.encodeElement(nodeKey),
+                RLP.encodeElement(nodeValue));
+    }
+
+    /**
+     * Returns the blockchain database in which the requested key was found.
+     *
+     * @return the blockchain database in which the requested key was found.
+     */
+    public TrieDatabase getDbType() {
+        return dbType;
+    }
+
+    /**
+     * Returns the key of the requested trie node.
+     *
+     * @return the key of the requested trie node.
+     */
+    public byte[] getNodeKey() {
+        return nodeKey;
+    }
+
+    /**
+     * Returns the value stored for the requested trie node.
+     *
+     * @return the value stored for the requested trie node.
+     */
+    public byte[] getNodeValue() {
+        return nodeValue;
     }
 }
