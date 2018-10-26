@@ -33,24 +33,32 @@ import org.aion.zero.impl.sync.Act;
 import org.aion.zero.impl.sync.TrieDatabase;
 
 /**
- * Request message for a trie state from a specific blockchain database.
+ * Request message for a trie node from a specific blockchain database.
  *
  * @author Alexandra Roatis
  */
 public final class RequestTrieState extends Msg {
-    private final TrieDatabase type;
-    private final byte[] hash;
+    private final TrieDatabase dbType;
+    private final byte[] nodeKey;
 
     /**
-     * @param hash the hash key of the requested trie node
-     * @param type the blockchain database in which the key should be found
+     * Constructor for trie node requests.
+     *
+     * @param nodeKey the key of the requested trie node
+     * @param dbType the blockchain database in which the key should be found
      */
-    public RequestTrieState(byte[] hash, TrieDatabase type) {
+    public RequestTrieState(final byte[] nodeKey, final TrieDatabase dbType) {
         super(Ver.V1, Ctrl.SYNC, Act.REQUEST_TRIE_STATE);
-        this.hash = hash;
-        this.type = type;
+        this.nodeKey = nodeKey;
+        this.dbType = dbType;
     }
 
+    /**
+     * Decodes a message into a trie node request.
+     *
+     * @param message a {@code byte} array representing a request for a trie node.
+     * @return the decoded trie node request.
+     */
     public static RequestTrieState decode(final byte[] message) {
         if (message == null) {
             return null;
@@ -77,14 +85,24 @@ public final class RequestTrieState extends Msg {
 
     @Override
     public byte[] encode() {
-        return RLP.encodeList(RLP.encodeString(type.toString()), RLP.encodeElement(hash));
+        return RLP.encodeList(RLP.encodeString(dbType.toString()), RLP.encodeElement(nodeKey));
     }
 
-    public TrieDatabase getType() {
-        return type;
+    /**
+     * Returns the blockchain database in which the requested key should be found.
+     *
+     * @return the blockchain database in which the requested key should be found.
+     */
+    public TrieDatabase getDbType() {
+        return dbType;
     }
 
-    public byte[] getHash() {
-        return hash;
+    /**
+     * Returns the key of the requested trie node.
+     *
+     * @return the key of the requested trie node.
+     */
+    public byte[] getNodeKey() {
+        return nodeKey;
     }
 }

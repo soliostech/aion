@@ -36,7 +36,7 @@ import org.aion.zero.impl.sync.msg.ResponseTrieState;
 import org.slf4j.Logger;
 
 /**
- * Handler for trie state requests from the network.
+ * Handler for trie node requests from the network.
  *
  * @author Alexandra Roatis
  */
@@ -46,50 +46,54 @@ public final class RequestTrieStateHandler extends Handler {
 
     private final IAionBlockchain chain;
 
-    private final IP2pMgr mgr;
+    private final IP2pMgr p2p;
 
+    /**
+     * Constructor.
+     *
+     * @param log logger for reporting execution information
+     * @param chain the blockchain used by the application
+     * @param p2p peer manager used to submit messages
+     */
     public RequestTrieStateHandler(
-            final Logger _log, final IAionBlockchain _chain, final IP2pMgr _mgr) {
+            final Logger log, final IAionBlockchain chain, final IP2pMgr p2p) {
         super(Ver.V1, Ctrl.SYNC, Act.REQUEST_TRIE_STATE);
-        this.log = _log;
-        this.chain = _chain;
-        this.mgr = _mgr;
+        this.log = log;
+        this.chain = chain;
+        this.p2p = p2p;
     }
 
     @Override
-    public void receive(int _nodeIdHashcode, String _displayId, final byte[] _msgBytes) {
+    public void receive(int nodeId, String displayId, final byte[] message) {
+        if (message == null || message.length == 0) {
+            this.log.debug("<req-trie empty message from peer={}>", displayId);
+            return;
+        }
 
-        RequestTrieState request = RequestTrieState.decode(_msgBytes);
+        RequestTrieState request = RequestTrieState.decode(message);
 
         if (request != null) {
-            TrieDatabase db = request.getType();
-            byte[] key = request.getHash();
+            TrieDatabase dbType = request.getDbType();
+            byte[] key = request.getNodeKey();
 
             if (log.isDebugEnabled()) {
                 this.log.debug(
-                        "<req-trie from-db={} hash={} node={}>",
-                        db,
+                        "<req-trie from-db={} key={} peer={}>",
+                        dbType,
                         ByteArrayWrapper.wrap(key),
-                        _displayId);
+                        displayId);
             }
 
-            // TODO: retrieve from blockchain depending on db
-            byte[] value = null;
-            switch (db) {
-                case STATE:
-                    break;
-                case DETAILS:
-                    break;
-                case STORAGE:
-                    break;
-            }
+            if (key != null) {
+                // retrieve from blockchain depending on db type
+                byte[] value = chain.getTrieNode(key, dbType);
 
-            this.mgr.send(_nodeIdHashcode, _displayId, new ResponseTrieState(key, value, db));
+                if (value != null) {
+                    this.p2p.send(nodeId, displayId, new ResponseTrieState(key, value, dbType));
+                }
+            }
         } else {
-            this.log.error(
-                    "<req-trie decode-error msg-bytes={} node={}>",
-                    _msgBytes == null ? 0 : _msgBytes.length,
-                    _nodeIdHashcode);
+            this.log.error("<req-trie decode-error msg-bytes={} peer={}>", message.length, nodeId);
         }
     }
 }
