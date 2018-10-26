@@ -50,8 +50,10 @@ import org.aion.mcf.db.ContractDetailsCacheImpl;
 import org.aion.mcf.db.TransactionStore;
 import org.aion.mcf.trie.SecureTrie;
 import org.aion.mcf.trie.Trie;
+import org.aion.mcf.trie.TrieNodeResult;
 import org.aion.zero.db.AionRepositoryCache;
 import org.aion.zero.impl.config.CfgAion;
+import org.aion.zero.impl.sync.TrieDatabase;
 import org.aion.zero.impl.types.AionBlock;
 import org.aion.zero.impl.types.AionTxInfo;
 import org.aion.zero.types.A0BlockHeader;
@@ -852,6 +854,46 @@ public class AionRepositoryImpl
             return value.get();
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Imports a trie node to the indicated blockchain database.
+     *
+     * @param key the hash key of the trie node to be imported
+     * @param value the value of the trie node to be imported
+     * @param dbType the database where the key-value pair should be stored
+     * @throws IllegalArgumentException if the given key is null
+     * @return a {@link TrieNodeResult} indicating the success or failure of the import operation
+     */
+    public TrieNodeResult importTrieNode(byte[] key, byte[] value, TrieDatabase dbType) {
+        IByteArrayKeyValueDatabase db = selectDatabase(dbType);
+
+        Optional<byte[]> stored = db.get(key);
+        if (stored.isPresent()) {
+            if (Arrays.equals(stored.get(), value)) {
+                return TrieNodeResult.KNOWN;
+            } else {
+                return TrieNodeResult.INCONSISTENT;
+            }
+        }
+
+        // TODO: verify that value is correct
+        // if incorrect return TrieNodeResult.INVALID
+
+        db.put(key, value);
+        return TrieNodeResult.IMPORTED;
+    }
+
+    private IByteArrayKeyValueDatabase selectDatabase(TrieDatabase dbType) {
+        switch (dbType) {
+            case DETAILS:
+                return detailsDatabase;
+            case STORAGE:
+                return storageDatabase;
+            case STATE:
+            default: // to ensure that a db is always returned
+                return stateDatabase;
         }
     }
 }
