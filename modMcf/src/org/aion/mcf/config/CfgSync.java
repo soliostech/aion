@@ -39,12 +39,17 @@ public final class CfgSync {
 
     private boolean showStatus;
 
+    // For verification of AJK-91 only - shouldn't be merged into master
+    private boolean requestReceipts;
+
     private static int BLOCKS_QUEUE_MAX = 32;
 
     public CfgSync() {
         this.blocksQueueMax = BLOCKS_QUEUE_MAX;
 
         this.showStatus = false;
+
+        this.requestReceipts = false;
     }
 
     public void fromXML(final XMLStreamReader sr) throws XMLStreamException {
@@ -60,6 +65,9 @@ public final class CfgSync {
                             break;
                         case "show-status":
                             this.showStatus = Boolean.parseBoolean(Cfg.readValue(sr));
+                            break;
+                        case "request-receipts":
+                            this.requestReceipts = Boolean.parseBoolean(Cfg.readValue(sr));
                             break;
                         default:
                             Cfg.skipElement(sr);
@@ -117,6 +125,10 @@ public final class CfgSync {
 
     public boolean getShowStatus() {
         return this.showStatus;
+    }
+
+    public boolean isRequestReceipts() {
+        return this.requestReceipts;
     }
 
     @Override

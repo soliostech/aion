@@ -198,6 +198,7 @@ public class AionHub {
                 eventMgr,
                 cfg.getSync().getBlocksQueueMax(),
                 cfg.getSync().getShowStatus(),
+                cfg.getSync().isRequestReceipts(),
                 receiptsRetrievalVerifier);
 
         ChainConfiguration chainConfig = new ChainConfiguration();

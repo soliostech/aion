@@ -81,6 +81,8 @@ final class TaskImportBlocks implements Runnable {
     private SortedSet<Long> baseList;
     private PeerState state;
 
+    // For verificiation of AJK-91 -- should not be committed into master
+    private boolean requestReceipts;
     private ReceiptsRetrievalVerifier rrv;
 
     TaskImportBlocks(
@@ -100,6 +102,7 @@ final class TaskImportBlocks implements Runnable {
         this.log = _log;
         this.baseList = new TreeSet<>();
         this.state = new PeerState(NORMAL, 0L);
+        this.requestReceipts = false;
     }
 
     TaskImportBlocks(
@@ -110,8 +113,10 @@ final class TaskImportBlocks implements Runnable {
             final Map<ByteArrayWrapper, Object> _importedBlockHashes,
             final Map<Integer, PeerState> _peerStates,
             final Logger _log,
+            final boolean requestReceipts,
             final ReceiptsRetrievalVerifier receiptsRetrievalVerifier) {
         this(_chain, _start, _stats, _downloadedBlocks, _importedBlockHashes, _peerStates, _log);
+        this.requestReceipts = requestReceipts;
         this.rrv = receiptsRetrievalVerifier;
     }
 
@@ -121,6 +126,7 @@ final class TaskImportBlocks implements Runnable {
     @Override
     public void run() {
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+        log.info("<<< TaskImportBlocks >>> requestReceipts = " + this.requestReceipts);
         while (start.get()) {
             BlocksWrapper bw;
             try {
@@ -400,7 +406,9 @@ final class TaskImportBlocks implements Runnable {
             }
         }
 
-        rrv.requestReceiptsFromPeers(storedImportedBlocks, displayId, nodeId);
+        if(requestReceipts) {
+            rrv.requestReceiptsFromPeers(storedImportedBlocks, displayId, nodeId);
+        }
 
         // check for stored blocks
         if (first < last) {

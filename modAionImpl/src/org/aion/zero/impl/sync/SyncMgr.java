@@ -170,6 +170,7 @@ public class SyncMgr {
             final IEventMgr _evtMgr,
             final int _blocksQueueMax,
             final boolean _showStatus,
+            final boolean requestReceipts,
             final ReceiptsRetrievalVerifier rrv) {
         p2pMgr = _p2pMgr;
         chain = _chain;
@@ -203,6 +204,7 @@ public class SyncMgr {
                                 importedBlockHashes,
                                 peerStates,
                                 log,
+                                requestReceipts,
                                 rrv),
                         "sync-ib");
         syncIb.start();
