@@ -38,6 +38,7 @@ import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -538,6 +539,18 @@ public class AionBlockchainImpl implements IAionBlockchain {
      */
     public TrieNodeResult importTrieNode(byte[] key, byte[] value, TrieDatabase dbType) {
         return repository.importTrieNode(key, value, dbType);
+    }
+
+    /**
+     * Traverse the trie for the given database starting from the given node. Return the keys for
+     * all the missing branches that are encountered during the traversal.
+     *
+     * @param key the starting node for the trie traversal
+     * @return a set of keys that were referenced as part of the trie but could not be found in the
+     *     database
+     */
+    public Set<ByteArrayWrapper> traverseTrieFromNode(byte[] key, TrieDatabase dbType) {
+        return repository.traverseTrieFromNode(key, dbType);
     }
 
     /**

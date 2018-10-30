@@ -42,6 +42,7 @@ import org.aion.base.db.IRepository;
 import org.aion.base.db.IRepositoryCache;
 import org.aion.base.db.IRepositoryConfig;
 import org.aion.base.type.Address;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.Hex;
 import org.aion.base.vm.IDataWord;
 import org.aion.mcf.core.AccountState;
@@ -50,6 +51,7 @@ import org.aion.mcf.db.ContractDetailsCacheImpl;
 import org.aion.mcf.db.TransactionStore;
 import org.aion.mcf.trie.SecureTrie;
 import org.aion.mcf.trie.Trie;
+import org.aion.mcf.trie.TrieImpl;
 import org.aion.mcf.trie.TrieNodeResult;
 import org.aion.zero.db.AionRepositoryCache;
 import org.aion.zero.impl.config.CfgAion;
@@ -854,6 +856,21 @@ public class AionRepositoryImpl
 
         db.put(key, value);
         return TrieNodeResult.IMPORTED;
+    }
+
+    /**
+     * Traverse the trie for the given database starting from the given node. Return the keys for
+     * all the missing branches that are encountered during the traversal.
+     *
+     * @param key the starting node for the trie traversal
+     * @return a set of keys that were referenced as part of the trie but could not be found in the
+     *     database
+     */
+    public Set<ByteArrayWrapper> traverseTrieFromNode(byte[] key, TrieDatabase dbType) {
+        IByteArrayKeyValueDatabase db = selectDatabase(dbType);
+
+        Trie trie = new TrieImpl(db);
+        return trie.getMissingNodes(key);
     }
 
     private IByteArrayKeyValueDatabase selectDatabase(TrieDatabase dbType) {
