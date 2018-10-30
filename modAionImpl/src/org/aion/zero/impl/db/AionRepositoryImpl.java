@@ -851,8 +851,15 @@ public class AionRepositoryImpl
             }
         }
 
-        // TODO: verify that value is correct
-        // if incorrect return TrieNodeResult.INVALID
+        // empty keys are not allowed
+        if (key == null || key.length != 32) {
+            return TrieNodeResult.INVALID_KEY;
+        }
+
+        // not allowing deletions to be imported
+        if (value == null || value.length == 0) {
+            return TrieNodeResult.INVALID_VALUE;
+        }
 
         db.put(key, value);
         return TrieNodeResult.IMPORTED;
