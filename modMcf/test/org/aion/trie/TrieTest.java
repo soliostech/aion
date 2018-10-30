@@ -33,12 +33,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.crypto.HashUtil;
 import org.aion.db.impl.mockdb.MockDB;
 import org.aion.mcf.trie.TrieImpl;
@@ -876,5 +879,133 @@ public class TrieTest {
                 trie2.hashCode()); // avoid possibility that its just a reference copy
         assertEquals(Hex.toHexString(trie.getRootHash()), Hex.toHexString(trie2.getRootHash()));
         assertTrue(trie.equals(trie2));
+    }
+
+    /** Trie updates taken from real blockchain use with sample accounts. */
+    private Map<ByteArrayWrapper, byte[]> getSampleTrieUpdates() {
+        Map<ByteArrayWrapper, byte[]> data = new HashMap<>();
+
+        ByteArrayWrapper key;
+        byte[] value;
+
+        key =
+                new ByteArrayWrapper(
+                        new byte[] {
+                            -96, 29, -93, -108, -55, -59, 67, -121, -3, 10, 44, -128, -127, 73, 90,
+                            -26, 3, 62, 55, -60, -82, -11, -96, -54, 106, 114, 42, 70, 46, 31, 37,
+                            29
+                        });
+        value =
+                new byte[] {
+                    -8, 78, -128, -118, -45, -62, 27, -50, -52, -19, -95, 0, 0, 0, -96, 69, -80,
+                    -49, -62, 32, -50, -20, 91, 124, 28, 98, -60, -44, 25, 61, 56, -28, -21, -92,
+                    -114, -120, 21, 114, -100, -25, 95, -100, 10, -80, -28, -63, -64, -96, 14, 87,
+                    81, -64, 38, -27, 67, -78, -24, -85, 46, -80, 96, -103, -38, -95, -47, -27, -33,
+                    71, 119, -113, 119, -121, -6, -85, 69, -51, -15, 47, -29, -88
+                };
+        data.put(key, value);
+
+        key =
+                new ByteArrayWrapper(
+                        new byte[] {
+                            -96, 44, -96, -3, -97, 10, 112, 111, 28, -32, 44, 18, 101, -106, 51, 6,
+                            -107, 0, 24, 13, 50, 81, -84, 68, 125, 110, 118, 97, -109, -96, -30, 107
+                        });
+        value =
+                new byte[] {
+                    -8, 78, -128, -118, -45, -62, 27, -50, -52, -19, -95, 0, 0, 0, -96, 69, -80,
+                    -49, -62, 32, -50, -20, 91, 124, 28, 98, -60, -44, 25, 61, 56, -28, -21, -92,
+                    -114, -120, 21, 114, -100, -25, 95, -100, 10, -80, -28, -63, -64, -96, 14, 87,
+                    81, -64, 38, -27, 67, -78, -24, -85, 46, -80, 96, -103, -38, -95, -47, -27, -33,
+                    71, 119, -113, 119, -121, -6, -85, 69, -51, -15, 47, -29, -88
+                };
+        data.put(key, value);
+
+        key =
+                new ByteArrayWrapper(
+                        new byte[] {
+                            -96, 53, 87, -10, 21, -118, 120, -87, 69, -83, 111, 41, -26, -81, 41,
+                            -82, -90, -108, -59, -19, -60, 87, -98, -88, 50, -127, 89, -11, -56,
+                            114, -113, 27
+                        });
+        value =
+                new byte[] {
+                    -8, 78, -128, -118, -45, -62, 27, -50, -52, -19, -95, 0, 0, 0, -96, 69, -80,
+                    -49, -62, 32, -50, -20, 91, 124, 28, 98, -60, -44, 25, 61, 56, -28, -21, -92,
+                    -114, -120, 21, 114, -100, -25, 95, -100, 10, -80, -28, -63, -64, -96, 14, 87,
+                    81, -64, 38, -27, 67, -78, -24, -85, 46, -80, 96, -103, -38, -95, -47, -27, -33,
+                    71, 119, -113, 119, -121, -6, -85, 69, -51, -15, 47, -29, -88
+                };
+        data.put(key, value);
+
+        key =
+                new ByteArrayWrapper(
+                        new byte[] {
+                            -96, -118, 43, 113, -6, -115, 90, 79, -76, -32, -70, -7, -91, -98, 70,
+                            111, 32, 97, 96, 55, -119, -89, 64, -34, -92, 94, 1, 58, -61, 63, 102,
+                            -92
+                        });
+        value =
+                new byte[] {
+                    -8, 78, -128, -118, -45, -62, 27, -50, -52, -19, -95, 0, 0, 0, -96, 69, -80,
+                    -49, -62, 32, -50, -20, 91, 124, 28, 98, -60, -44, 25, 61, 56, -28, -21, -92,
+                    -114, -120, 21, 114, -100, -25, 95, -100, 10, -80, -28, -63, -64, -96, 14, 87,
+                    81, -64, 38, -27, 67, -78, -24, -85, 46, -80, 96, -103, -38, -95, -47, -27, -33,
+                    71, 119, -113, 119, -121, -6, -85, 69, -51, -15, 47, -29, -88
+                };
+        data.put(key, value);
+
+        return data;
+    }
+
+    @Test
+    public void testGetMissingNodes_wCompleteTrie() {
+        MockDB mockDB = new MockDB("temp");
+        mockDB.open();
+        TrieImpl trie = new TrieImpl(mockDB);
+
+        for (Map.Entry<ByteArrayWrapper, byte[]> e : getSampleTrieUpdates().entrySet()) {
+            trie.update(e.getKey().getData(), e.getValue());
+        }
+        trie.getCache().commit(true);
+
+        byte[] root = trie.getRootHash();
+
+        trie = new TrieImpl(mockDB);
+        assertThat(trie.getMissingNodes(root)).isEmpty();
+    }
+
+    @Test
+    public void testGetMissingNodes_wIncompleteTrie() {
+        MockDB mockDB = new MockDB("temp");
+        mockDB.open();
+        TrieImpl trie = new TrieImpl(mockDB);
+
+        for (Map.Entry<ByteArrayWrapper, byte[]> e : getSampleTrieUpdates().entrySet()) {
+            trie.update(e.getKey().getData(), e.getValue());
+        }
+        trie.getCache().commit(true);
+
+        byte[] root = trie.getRootHash();
+        System.out.println(trie.getTrieDump(root));
+
+        // removing two of the nodes from the trie
+        Set<ByteArrayWrapper> expected = new HashSet<>();
+        expected.add(
+                new ByteArrayWrapper(
+                        "59c2a26cebd0ed50053bba185a7d13e1ae58314e2c37d46c1f7b885fd93b687a"));
+        expected.add(
+                new ByteArrayWrapper(
+                        "ddf1b495a3e98e1897a9b1257d4172d59fcbe0dba23b8b87812ca2a55919d9ab"));
+
+        for (ByteArrayWrapper key : expected) {
+            mockDB.delete(key.getData());
+        }
+
+        trie = new TrieImpl(mockDB);
+
+        Set<ByteArrayWrapper> missing = trie.getMissingNodes(root);
+        assertThat(missing).hasSize(2);
+        assertThat(missing).isEqualTo(expected);
     }
 }
