@@ -121,7 +121,6 @@ public class AionTxInfo extends AbstractTxInfo<AionTxReceipt, AionTransaction> {
     public String toString() {
         return "AionTxInfo{" +
                 ", blockHash=" + blockHash +
-//                ", parentBlockHash=" + parentBlockHash +
                 ", index=" + index +
                 "receipt=" + receipt +
                 '}';
