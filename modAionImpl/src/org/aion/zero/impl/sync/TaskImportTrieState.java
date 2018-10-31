@@ -23,104 +23,135 @@
 
 package org.aion.zero.impl.sync;
 
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.aion.base.util.ByteArrayWrapper;
+import org.aion.base.util.Hex;
 import org.aion.mcf.trie.TrieNodeResult;
-import org.aion.p2p.IP2pMgr;
 import org.aion.zero.impl.AionBlockchainImpl;
 import org.slf4j.Logger;
 
 /**
- * Processes the received trie nodes that were requested. Ensures that the full trie is the
- * eventually received by tracking the completeness of the imports.
- *
- * <p>Requests the trie nodes in reasonable batches (TODO: define size).
+ * Processes the received trie nodes that were requested. The thread is shut down once the fast sync
+ * manager indicates that the full trie is the complete.
  *
  * @author Alexandra Roatis
  */
 final class TaskImportTrieState implements Runnable {
 
     private final Logger log;
-    private final AtomicBoolean run;
-    private final IP2pMgr p2p;
+    private final FastSyncMgr fastSyncMgr;
 
     private final AionBlockchainImpl chain;
     private final BlockingQueue<TrieNodeWrapper> trieNodes;
-
-    private final Set<ByteArrayWrapper> importedTrieNodes;
-    private final BlockingQueue<ByteArrayWrapper> requiredTrieNodes;
 
     /**
      * Constructor.
      *
      * @param log logger for reporting execution information
-     * @param run used to indicate when thread is required to shutdown
-     * @param p2p peer manager used to submit messages
      * @param chain the blockchain used by the application
      * @param trieNodes received trie nodes
+     * @param fastSyncMgr manages the fast sync process and indicates when completeness is reached
      */
     TaskImportTrieState(
             final Logger log,
-            final AtomicBoolean run,
-            final IP2pMgr p2p,
             final AionBlockchainImpl chain,
             final BlockingQueue<TrieNodeWrapper> trieNodes,
-            final Set<ByteArrayWrapper> importedTrieNodes,
-            final BlockingQueue<ByteArrayWrapper> requiredTrieNodes) {
+            final FastSyncMgr fastSyncMgr) {
         this.log = log;
-        this.run = run;
-        this.p2p = p2p;
         this.chain = chain;
         this.trieNodes = trieNodes;
-        this.importedTrieNodes = importedTrieNodes;
-        // TODO: may be converted to local variable
-        this.requiredTrieNodes = requiredTrieNodes;
+        this.fastSyncMgr = fastSyncMgr;
     }
 
     @Override
     public void run() {
-        // TODO: determine priority setting
+        // importing the trie state should be highest priority
+        // since it is usually the longest process (on large blockchains)
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-        while (run.get()) {
+        while (!fastSyncMgr.isComplete()) {
             TrieNodeWrapper tnw;
             try {
                 tnw = trieNodes.take();
             } catch (InterruptedException ex) {
-                if (run.get()) {
+                if (!fastSyncMgr.isComplete()) {
                     log.error("<import-trie-nodes: interrupted without shutdown request>", ex);
                 }
                 return;
             }
 
-            // TODO: batch imports to chain
-            for (Entry<ByteArrayWrapper, byte[]> e : tnw.getTrieNodes().entrySet()) {
-                TrieNodeResult result =
-                        chain.importTrieNode(e.getKey().getData(), e.getValue(), tnw.getDbType());
+            // filter nodes that already match imported values
+            Map<ByteArrayWrapper, byte[]> nodes = filterImported(tnw.getTrieNodes());
+
+            // skip batch if everything already imported
+            if (nodes.isEmpty()) {
+                continue;
+            }
+
+            TrieDatabase dbType = tnw.getDbType();
+            String peer = tnw.getDisplayId();
+            ByteArrayWrapper key;
+            byte[] value;
+            boolean failed = false;
+
+            for (Entry<ByteArrayWrapper, byte[]> e : nodes.entrySet()) {
+                key = e.getKey();
+                value = e.getValue();
+
+                TrieNodeResult result = chain.importTrieNode(key.getData(), value, dbType);
 
                 if (result.isSuccessful()) {
-                    // TODO: traverse state to determine further requirements
+                    fastSyncMgr.addImportedNode(key, value);
+                    log.debug(
+                            "<import-trie-nodes: key={}, value length={}, db={}, result={}, peer={}>",
+                            key,
+                            value.length,
+                            dbType,
+                            result,
+                            peer);
                 } else {
                     if (log.isDebugEnabled()) {
-                        // TODO: improve message
-                        log.debug("Given value {} is incorrect or does not match known value {} ");
+                        log.debug(
+                                "<import-trie-nodes-failed: key={}, value={}, db={}, result={}, peer={}>",
+                                key,
+                                Hex.toHexString(value),
+                                dbType,
+                                result,
+                                peer);
                     }
-
-                    // TODO: received incorrect or inconsistent state: change pivot??
+                    fastSyncMgr.handleFailedImport(key, value, dbType, tnw.getPeerId(), peer);
+                    failed = true;
+                    // exit this loop and ignore other imports
+                    break;
                 }
             }
 
-            // TODO: send state request to multiple peers
-
-            // TODO: notify sync manager when complete state, storage and details
-
+            if (!failed) {
+                // reexamine missing states and make further requests
+                fastSyncMgr.updateRequests(nodes.keySet());
+            }
         }
 
         if (log.isDebugEnabled()) {
             log.debug("<import-trie-nodes: shutdown>");
         }
+    }
+
+    /**
+     * Filters out trie nodes that have been imported when both the key and the value match the
+     * already imported data.
+     *
+     * @param trieNodes the initial set of trie nodes to be imported
+     * @return the remaining nodes after the exact matches have been filtered out
+     */
+    private Map<ByteArrayWrapper, byte[]> filterImported(Map<ByteArrayWrapper, byte[]> trieNodes) {
+        return trieNodes
+                .entrySet()
+                .parallelStream()
+                .filter(e -> !fastSyncMgr.containsExact(e.getKey(), e.getValue()))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 }
