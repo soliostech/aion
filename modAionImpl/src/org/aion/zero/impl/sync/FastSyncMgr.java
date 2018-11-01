@@ -46,8 +46,10 @@ import org.aion.zero.impl.types.AionBlock;
  */
 public final class FastSyncMgr {
 
-    private final Map<ByteArrayWrapper, byte[]> importedTrieNodes;
-    private final BlockingQueue<ByteArrayWrapper> requiredTrieNodes;
+    private final Map<ByteArrayWrapper, byte[]> importedTrieNodes = new ConcurrentHashMap<>();
+    private final BlockingQueue<ByteArrayWrapper> requiredTrieNodes = new LinkedBlockingQueue<>();
+    private final BlockingQueue<TrieNodeWrapper> receivedTrieNodes = new LinkedBlockingQueue<>();
+
     private final AtomicBoolean complete = new AtomicBoolean(false);
     private AionBlock pivot = null;
     private final AionBlockchainImpl chain;
@@ -55,8 +57,6 @@ public final class FastSyncMgr {
     // TODO: define the trie depth for each request to set the batch size
 
     public FastSyncMgr(AionBlockchainImpl chain) {
-        this.importedTrieNodes = new ConcurrentHashMap<>();
-        this.requiredTrieNodes = new LinkedBlockingQueue<>();
         this.chain = chain;
     }
 
@@ -82,6 +82,10 @@ public final class FastSyncMgr {
         // TODO: decide on how far back to move the pivot
     }
 
+    public BlockingQueue<TrieNodeWrapper> getReceivedTrieNodes() {
+        return receivedTrieNodes;
+    }
+
     /**
      * Indicates the status of the fast sync process.
      *
@@ -104,6 +108,7 @@ public final class FastSyncMgr {
         }
 
         // TODO: determine most efficient ordering of conditions
+        // TODO: make distinction between requirements of light clients and full nodes
 
         // ensure all blocks were received
         if (!isCompleteBlockData()) {
@@ -135,12 +140,13 @@ public final class FastSyncMgr {
     }
 
     private boolean isCompleteBlockData() {
-        // TODO
+        // TODO: block requests should be made backwards from pivot
+        // TODO: requests need to be based on hash instead of level
         return false;
     }
 
     private boolean isCompleteReceiptData() {
-        // TODO
+        // TODO: implemented on separate branch
         return false;
     }
 
