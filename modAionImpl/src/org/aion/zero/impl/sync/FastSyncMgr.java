@@ -26,8 +26,13 @@ package org.aion.zero.impl.sync;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.aion.base.util.ByteArrayWrapper;
+import org.aion.zero.impl.AionBlockchainImpl;
+import org.aion.zero.impl.types.AionBlock;
 
 /**
  * Directs behavior for fast sync functionality.
@@ -42,9 +47,17 @@ import org.aion.base.util.ByteArrayWrapper;
 public final class FastSyncMgr {
 
     private final Map<ByteArrayWrapper, byte[]> importedTrieNodes;
+    private final BlockingQueue<ByteArrayWrapper> requiredTrieNodes;
+    private final AtomicBoolean complete = new AtomicBoolean(false);
+    private AionBlock pivot = null;
+    private final AionBlockchainImpl chain;
 
-    public FastSyncMgr() {
+    // TODO: define the trie depth for each request to set the batch size
+
+    public FastSyncMgr(AionBlockchainImpl chain) {
         this.importedTrieNodes = new ConcurrentHashMap<>();
+        this.requiredTrieNodes = new LinkedBlockingQueue<>();
+        this.chain = chain;
     }
 
     public void addImportedNode(ByteArrayWrapper key, byte[] value) {
@@ -56,19 +69,111 @@ public final class FastSyncMgr {
                 && Arrays.equals(importedTrieNodes.get(key), value);
     }
 
+    private void initializePivot() {
+        // from pending store grab the first status that was received multiple time
+        pivot = null; // TODO: chain.findAPivot()
+    }
+
     /** Changes the pivot in case of import failure. */
     public void handleFailedImport(
             ByteArrayWrapper key, byte[] value, TrieDatabase dbType, int peerId, String peer) {
-        // TODO
+        // TODO: received incorrect or inconsistent state: change pivot??
+        // TODO: consider case where someone purposely sends incorrect values
+        // TODO: decide on how far back to move the pivot
     }
 
-    /** @return {@code true} when fast sync is complete and secure */
+    /**
+     * Indicates the status of the fast sync process.
+     *
+     * @return {@code true} when fast sync is complete and secure, {@code false} while trie nodes
+     *     are still required or completeness has not been confirmed yet
+     */
     public boolean isComplete() {
+        return complete.get();
+    }
+
+    /**
+     * Checks that all the conditions for completeness are fulfilled.
+     *
+     * @implNote Expensive functionality which should not be called frequently.
+     */
+    private void ensureCompleteness() {
+        // already complete, do nothing
+        if (isComplete()) {
+            return;
+        }
+
+        // TODO: determine most efficient ordering of conditions
+
+        // ensure all blocks were received
+        if (!isCompleteBlockData()) {
+            return;
+        }
+
+        // ensure all transaction receipts were received
+        if (!isCompleteReceiptData()) {
+            return;
+        }
+
+        // ensure complete world state for pivot was received
+        if (!isCompleteWorldState()) {
+            return;
+        }
+
+        // ensure complete storage data was received
+        if (!isCompleteStorage()) {
+            return;
+        }
+
+        // ensure complete contract details data was received
+        if (!isCompleteContractDetails()) {
+            return;
+        }
+
+        // everything is complete
+        complete.set(true);
+    }
+
+    private boolean isCompleteBlockData() {
+        // TODO
+        return false;
+    }
+
+    private boolean isCompleteReceiptData() {
+        // TODO
+        return false;
+    }
+
+    private boolean isCompleteWorldState() {
+        if (pivot == null) {
+            return false;
+        } else {
+            // get root of pivot
+            byte[] root = pivot.getStateRoot();
+
+            Set<ByteArrayWrapper> missing = chain.traverseTrieFromNode(root, TrieDatabase.STATE);
+
+            if (missing.isEmpty()) {
+                return true;
+            } else {
+                requiredTrieNodes.addAll(missing);
+                return false;
+            }
+        }
+    }
+
+    private boolean isCompleteStorage() {
+        // TODO
+        return false;
+    }
+
+    private boolean isCompleteContractDetails() {
         // TODO
         return false;
     }
 
     public void updateRequests(Set<ByteArrayWrapper> keys) {
-        // TODO
+        // TODO: check what's still missing and send out requests
+        // TODO: send state request to multiple peers
     }
 }
