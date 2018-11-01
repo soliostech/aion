@@ -200,6 +200,7 @@ public class AionHub {
             fastSyncMgr = new FastSyncMgr(blockchain);
         } else {
             // cannot fast sync if start is not genesis
+            fastSyncMgr = new FastSyncMgr(); // constructor with disabled functionality
             fastSync = false;
         }
 
@@ -210,6 +211,7 @@ public class AionHub {
                         this.blockchain,
                         p2pMgr,
                         chainConfig.createBlockHeaderValidator(),
+                        fastSyncMgr,
                         cfg.getNet().getP2p().inSyncOnlyMode());
 
         registerCallback(fastSync);

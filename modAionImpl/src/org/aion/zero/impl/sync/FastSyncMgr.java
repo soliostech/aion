@@ -25,6 +25,8 @@ package org.aion.zero.impl.sync;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +48,8 @@ import org.aion.zero.impl.types.AionBlock;
  */
 public final class FastSyncMgr {
 
+    private boolean enabled;
+
     private final Map<ByteArrayWrapper, byte[]> importedTrieNodes = new ConcurrentHashMap<>();
     private final BlockingQueue<ByteArrayWrapper> requiredTrieNodes = new LinkedBlockingQueue<>();
     private final BlockingQueue<TrieNodeWrapper> receivedTrieNodes = new LinkedBlockingQueue<>();
@@ -54,35 +58,73 @@ public final class FastSyncMgr {
     private AionBlock pivot = null;
     private final AionBlockchainImpl chain;
 
+    // used for pivot selection
+    private final AtomicBoolean pivotNotInitialized = new AtomicBoolean(true);
+    private final Map<AionBlock, Integer> pivotCandidates = new ConcurrentHashMap<>();
+    private static final int MINIMUM_REQUIRED_PIVOT_CANDIDATES = 32;
+
     // TODO: define the trie depth for each request to set the batch size
 
+    public FastSyncMgr() {
+        this.enabled = false;
+        this.chain = null;
+    }
+
     public FastSyncMgr(AionBlockchainImpl chain) {
+        this.enabled = true;
         this.chain = chain;
     }
 
     public void addImportedNode(ByteArrayWrapper key, byte[] value) {
-        importedTrieNodes.put(key, value);
+        if (enabled) {
+            importedTrieNodes.put(key, value);
+        }
     }
 
     public boolean containsExact(ByteArrayWrapper key, byte[] value) {
-        return importedTrieNodes.containsKey(key)
+        return enabled
+                && importedTrieNodes.containsKey(key)
                 && Arrays.equals(importedTrieNodes.get(key), value);
     }
 
     private void initializePivot() {
-        // from pending store grab the first status that was received multiple time
-        pivot = null; // TODO: chain.findAPivot()
+        if (pivot != null) {
+            pivotNotInitialized.set(false);
+            return;
+        }
+
+        // ensure the min number of status blocks were received before initializing the pivot
+        if (pivotCandidates.size() < MINIMUM_REQUIRED_PIVOT_CANDIDATES) {
+            return;
+        }
+
+        // TODO: ignore same status received from same peer
+        // take the status block received most times
+        Optional<Map.Entry<AionBlock, Integer>> pivotOption =
+                pivotCandidates.entrySet().parallelStream().max(Map.Entry.comparingByValue());
+
+        pivot = pivotOption.map(Entry::getKey).orElse(null);
+    }
+
+    public void addPivotCandidate(AionBlock block) {
+        if (enabled && pivotNotInitialized.get()) {
+            // save status block + increment number of times it was received
+            pivotCandidates.put(block, pivotCandidates.getOrDefault(block, 0) + 1);
+        }
     }
 
     /** Changes the pivot in case of import failure. */
     public void handleFailedImport(
             ByteArrayWrapper key, byte[] value, TrieDatabase dbType, int peerId, String peer) {
-        // TODO: received incorrect or inconsistent state: change pivot??
-        // TODO: consider case where someone purposely sends incorrect values
-        // TODO: decide on how far back to move the pivot
+        if (enabled) {
+            // TODO: received incorrect or inconsistent state: change pivot??
+            // TODO: consider case where someone purposely sends incorrect values
+            // TODO: decide on how far back to move the pivot
+        }
     }
 
     public BlockingQueue<TrieNodeWrapper> getReceivedTrieNodes() {
+        // is null when not enabled
         return receivedTrieNodes;
     }
 
@@ -93,7 +135,7 @@ public final class FastSyncMgr {
      *     are still required or completeness has not been confirmed yet
      */
     public boolean isComplete() {
-        return complete.get();
+        return !enabled || complete.get();
     }
 
     /**
@@ -179,7 +221,9 @@ public final class FastSyncMgr {
     }
 
     public void updateRequests(Set<ByteArrayWrapper> keys) {
-        // TODO: check what's still missing and send out requests
-        // TODO: send state request to multiple peers
+        if (enabled) {
+            // TODO: check what's still missing and send out requests
+            // TODO: send state request to multiple peers
+        }
     }
 }

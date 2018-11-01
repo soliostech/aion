@@ -46,6 +46,7 @@ import org.aion.mcf.valid.BlockHeaderValidator;
 import org.aion.p2p.IP2pMgr;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.core.IAionBlockchain;
+import org.aion.zero.impl.sync.FastSyncMgr;
 import org.aion.zero.impl.sync.msg.BroadcastNewBlock;
 import org.aion.zero.impl.sync.msg.ResStatus;
 import org.aion.zero.impl.types.AionBlock;
@@ -83,11 +84,23 @@ public class BlockPropagationHandler {
 
     private static final byte[] genesis = CfgAion.inst().getGenesis().getHash();
 
+    private final FastSyncMgr fastSyncMgr;
+
     public BlockPropagationHandler(
             final int cacheSize,
             final IAionBlockchain blockchain,
             final IP2pMgr p2pManager,
             BlockHeaderValidator<A0BlockHeader> headerValidator,
+            final boolean isSyncOnlyNode) {
+        this(cacheSize, blockchain, p2pManager, headerValidator, new FastSyncMgr(), isSyncOnlyNode);
+    }
+
+    public BlockPropagationHandler(
+            final int cacheSize,
+            final IAionBlockchain blockchain,
+            final IP2pMgr p2pManager,
+            BlockHeaderValidator<A0BlockHeader> headerValidator,
+            final FastSyncMgr fastSyncMgr,
             final boolean isSyncOnlyNode) {
         /*
          * Size of the cache maintained within the map, a lower cacheSize
@@ -108,6 +121,7 @@ public class BlockPropagationHandler {
 
         this.blockHeaderValidator = headerValidator;
 
+        this.fastSyncMgr = fastSyncMgr;
         this.isSyncOnlyNode = isSyncOnlyNode;
     }
 
@@ -182,6 +196,8 @@ public class BlockPropagationHandler {
                         result);
             }
             boolean stored = blockchain.storePendingStatusBlock(block);
+            fastSyncMgr.addPivotCandidate(block);
+
             if (log.isDebugEnabled()) {
                 log.debug(
                         "Block hash = {}, number = {}, txs = {} was {}.",
