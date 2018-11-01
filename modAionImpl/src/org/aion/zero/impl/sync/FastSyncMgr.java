@@ -23,7 +23,10 @@
 
 package org.aion.zero.impl.sync;
 
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.aion.base.util.ByteArrayWrapper;
 
 /**
@@ -38,8 +41,19 @@ import org.aion.base.util.ByteArrayWrapper;
  */
 public final class FastSyncMgr {
 
+    private final Map<ByteArrayWrapper, byte[]> importedTrieNodes;
+
+    public FastSyncMgr() {
+        this.importedTrieNodes = new ConcurrentHashMap<>();
+    }
+
     public void addImportedNode(ByteArrayWrapper key, byte[] value) {
-        // TODO
+        importedTrieNodes.put(key, value);
+    }
+
+    public boolean containsExact(ByteArrayWrapper key, byte[] value) {
+        return importedTrieNodes.containsKey(key)
+                && Arrays.equals(importedTrieNodes.get(key), value);
     }
 
     /** Changes the pivot in case of import failure. */
@@ -50,11 +64,6 @@ public final class FastSyncMgr {
 
     /** @return {@code true} when fast sync is complete and secure */
     public boolean isComplete() {
-        // TODO
-        return false;
-    }
-
-    public boolean containsExact(ByteArrayWrapper key, byte[] value) {
         // TODO
         return false;
     }
