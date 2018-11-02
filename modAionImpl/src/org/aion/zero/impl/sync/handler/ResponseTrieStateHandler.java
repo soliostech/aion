@@ -24,12 +24,10 @@
 package org.aion.zero.impl.sync.handler;
 
 import java.util.concurrent.BlockingQueue;
-import org.aion.base.util.ByteArrayWrapper;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Handler;
 import org.aion.p2p.Ver;
 import org.aion.zero.impl.sync.Act;
-import org.aion.zero.impl.sync.TrieDatabase;
 import org.aion.zero.impl.sync.TrieNodeWrapper;
 import org.aion.zero.impl.sync.msg.ResponseTrieState;
 import org.slf4j.Logger;
@@ -67,24 +65,11 @@ public final class ResponseTrieStateHandler extends Handler {
         ResponseTrieState response = ResponseTrieState.decode(message);
 
         if (response != null) {
-            TrieDatabase dbType = response.getDbType();
-            byte[] key = response.getNodeKey();
-            byte[] value = response.getNodeValue();
-
             if (log.isDebugEnabled()) {
-                this.log.debug(
-                        "<res-trie from-db={} key={} value={} peer={}>",
-                        dbType,
-                        ByteArrayWrapper.wrap(key),
-                        ByteArrayWrapper.wrap(value),
-                        displayId);
+                this.log.debug("<res-trie response={} peer={}>", response, displayId);
             }
 
-            if (key != null && value != null) {
-                states.add(
-                        new TrieNodeWrapper(
-                                peerId, displayId, dbType, ByteArrayWrapper.wrap(key), value));
-            }
+            states.add(new TrieNodeWrapper(peerId, displayId, response));
         } else {
             this.log.error("<res-trie decode-error msg-bytes={} peer={}>", message.length, peerId);
         }

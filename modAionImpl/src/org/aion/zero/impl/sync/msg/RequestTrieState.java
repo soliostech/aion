@@ -23,6 +23,7 @@
 
 package org.aion.zero.impl.sync.msg;
 
+import java.util.Objects;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Msg;
 import org.aion.p2p.Ver;
@@ -46,9 +47,15 @@ public final class RequestTrieState extends Msg {
      *
      * @param nodeKey the key of the requested trie node
      * @param dbType the blockchain database in which the key should be found
+     * @throws NullPointerException if either of the given parameters is {@code null}
      */
     public RequestTrieState(final byte[] nodeKey, final TrieDatabase dbType) {
         super(Ver.V1, Ctrl.SYNC, Act.REQUEST_TRIE_STATE);
+
+        // ensure inputs are not null
+        Objects.requireNonNull(nodeKey);
+        Objects.requireNonNull(dbType);
+
         this.nodeKey = nodeKey;
         this.dbType = dbType;
     }
@@ -60,25 +67,33 @@ public final class RequestTrieState extends Msg {
      * @return the decoded trie node request.
      */
     public static RequestTrieState decode(final byte[] message) {
-        if (message == null) {
+        if (message == null || message.length == 0) {
             return null;
         } else {
             RLPList list = (RLPList) RLP.decode2(message).get(0);
             if (list.size() != 2) {
-                // incorrect message
                 return null;
             } else {
+                // decode the db type
                 Value type = Value.fromRlpEncoded(list.get(0).getRLPData());
+                TrieDatabase dbType;
                 if (!type.isString()) {
-                    // incorrect message
                     return null;
+                } else {
+                    try {
+                        dbType = TrieDatabase.valueOf(type.asString());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
                 }
+
+                // decode the key
                 Value hash = Value.fromRlpEncoded(list.get(1).getRLPData());
                 if (!hash.isBytes() || hash.asBytes().length != 32) {
-                    // incorrect message
                     return null;
                 }
-                return new RequestTrieState(hash.asBytes(), TrieDatabase.valueOf(type.asString()));
+
+                return new RequestTrieState(hash.asBytes(), dbType);
             }
         }
     }

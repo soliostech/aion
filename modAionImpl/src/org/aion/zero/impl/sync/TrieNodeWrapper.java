@@ -23,9 +23,9 @@
 
 package org.aion.zero.impl.sync;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.aion.base.util.ByteArrayWrapper;
+import org.aion.zero.impl.sync.msg.ResponseTrieState;
 
 /**
  * Container for received trie node requests.
@@ -36,46 +36,19 @@ public final class TrieNodeWrapper {
 
     private final int peerId;
     private final String displayId;
-
-    private final TrieDatabase dbType;
-    private final Map<ByteArrayWrapper, byte[]> trieNodes = new HashMap<>();
+    private final ResponseTrieState data;
 
     /**
-     * Constructor for response with a single key-value pair.
+     * Constructor.
      *
      * @param peerId the hash id of the peer who sent the response
      * @param displayId the display id of the peer who sent the response
-     * @param dbType the blockchain database in which the requested key was found
-     * @param nodeKey the key of the requested trie node
-     * @param nodeValue the value stored for the requested trie node
+     * @param data the response received from the peer containing the trie node data
      */
-    public TrieNodeWrapper(
-            final int peerId,
-            final String displayId,
-            final TrieDatabase dbType,
-            final ByteArrayWrapper nodeKey,
-            final byte[] nodeValue) {
+    public TrieNodeWrapper(final int peerId, final String displayId, final ResponseTrieState data) {
         this.peerId = peerId;
         this.displayId = displayId;
-        this.dbType = dbType;
-        this.trieNodes.put(nodeKey, nodeValue);
-    }
-    /**
-     * Constructor for response with a multiple key-value pairs.
-     *
-     * @param peerId the hash id of the peer who sent the response
-     * @param dbType the blockchain database in which the requested key was found
-     * @param trieNodes the key-value pairs for the requested trie node
-     */
-    public TrieNodeWrapper(
-            final int peerId,
-            final String displayId,
-            final TrieDatabase dbType,
-            final Map<ByteArrayWrapper, byte[]> trieNodes) {
-        this.peerId = peerId;
-        this.displayId = displayId;
-        this.dbType = dbType;
-        this.trieNodes.putAll(trieNodes);
+        this.data = data;
     }
 
     /**
@@ -102,7 +75,7 @@ public final class TrieNodeWrapper {
      * @return the blockchain database in which the requested key was found.
      */
     public TrieDatabase getDbType() {
-        return dbType;
+        return data.getDbType();
     }
 
     /**
@@ -110,7 +83,25 @@ public final class TrieNodeWrapper {
      *
      * @return the key-value pairs for the requested trie node.
      */
-    public Map<ByteArrayWrapper, byte[]> getTrieNodes() {
-        return trieNodes;
+    public Map<ByteArrayWrapper, byte[]> getReferencedNodes() {
+        return data.getReferencedNodes();
+    }
+
+    /**
+     * Returns the key of the requested trie node.
+     *
+     * @return the key of the requested trie node.
+     */
+    public ByteArrayWrapper getNodeKey() {
+        return data.getNodeKey();
+    }
+
+    /**
+     * Returns the value stored for the requested trie node.
+     *
+     * @return the value stored for the requested trie node.
+     */
+    public byte[] getNodeValue() {
+        return data.getNodeValue();
     }
 }

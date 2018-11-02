@@ -84,7 +84,7 @@ final class TaskImportTrieState implements Runnable {
             }
 
             // filter nodes that already match imported values
-            Map<ByteArrayWrapper, byte[]> nodes = filterImported(tnw.getTrieNodes());
+            Map<ByteArrayWrapper, byte[]> nodes = filterImported(tnw);
 
             // skip batch if everything already imported
             if (nodes.isEmpty()) {
@@ -131,7 +131,7 @@ final class TaskImportTrieState implements Runnable {
 
             if (!failed) {
                 // reexamine missing states and make further requests
-                fastSyncMgr.updateRequests(nodes.keySet());
+                fastSyncMgr.updateRequests(tnw.getNodeKey(), tnw.getReferencedNodes().keySet());
             }
         }
 
@@ -144,14 +144,20 @@ final class TaskImportTrieState implements Runnable {
      * Filters out trie nodes that have been imported when both the key and the value match the
      * already imported data.
      *
-     * @param trieNodes the initial set of trie nodes to be imported
+     * @param wrapper the initial set of trie nodes to be imported
      * @return the remaining nodes after the exact matches have been filtered out
      */
-    private Map<ByteArrayWrapper, byte[]> filterImported(Map<ByteArrayWrapper, byte[]> trieNodes) {
-        return trieNodes
-                .entrySet()
-                .parallelStream()
-                .filter(e -> !fastSyncMgr.containsExact(e.getKey(), e.getValue()))
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    private Map<ByteArrayWrapper, byte[]> filterImported(TrieNodeWrapper wrapper) {
+        Map<ByteArrayWrapper, byte[]> nodes =
+                wrapper.getReferencedNodes()
+                        .entrySet()
+                        .parallelStream()
+                        .filter(e -> !fastSyncMgr.containsExact(e.getKey(), e.getValue()))
+                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+        if (!fastSyncMgr.containsExact(wrapper.getNodeKey(), wrapper.getNodeValue())) {
+            nodes.put(wrapper.getNodeKey(), wrapper.getNodeValue());
+        }
+        return nodes;
     }
 }

@@ -110,6 +110,7 @@ public final class FastSyncMgr {
         if (enabled && pivotNotInitialized.get()) {
             // save status block + increment number of times it was received
             pivotCandidates.put(block, pivotCandidates.getOrDefault(block, 0) + 1);
+            initializePivot();
         }
     }
 
@@ -220,7 +221,7 @@ public final class FastSyncMgr {
         return false;
     }
 
-    public void updateRequests(Set<ByteArrayWrapper> keys) {
+    public void updateRequests(ByteArrayWrapper topmostKey, Set<ByteArrayWrapper> referencedKeys) {
         if (enabled) {
             // TODO: check what's still missing and send out requests
             // TODO: send state request to multiple peers

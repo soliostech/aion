@@ -74,23 +74,19 @@ public final class RequestTrieStateHandler extends Handler {
 
         if (request != null) {
             TrieDatabase dbType = request.getDbType();
-            byte[] key = request.getNodeKey();
+            ByteArrayWrapper key = ByteArrayWrapper.wrap(request.getNodeKey());
 
             if (log.isDebugEnabled()) {
-                this.log.debug(
-                        "<req-trie from-db={} key={} peer={}>",
-                        dbType,
-                        ByteArrayWrapper.wrap(key),
-                        displayId);
+                this.log.debug("<req-trie from-db={} key={} peer={}>", dbType, key, displayId);
             }
 
-            if (key != null) {
-                // retrieve from blockchain depending on db type
-                byte[] value = chain.getTrieNode(key, dbType);
+            // retrieve from blockchain depending on db type
+            byte[] value = chain.getTrieNode(key.getData(), dbType);
 
-                if (value != null) {
-                    this.p2p.send(peerId, displayId, new ResponseTrieState(key, value, dbType));
-                }
+            if (value != null) {
+                // TODO: add functionality for sending batches of nodes
+                this.p2p.send(
+                        peerId, displayId, new ResponseTrieState(key.getData(), value, dbType));
             }
         } else {
             this.log.error("<req-trie decode-error msg-bytes={} peer={}>", message.length, peerId);
