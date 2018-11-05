@@ -38,7 +38,6 @@ import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -526,6 +525,14 @@ public class AionBlockchainImpl implements IAionBlockchain {
     @Override
     public byte[] getTrieNode(byte[] key, TrieDatabase dbType) {
         return repository.getTrieNode(key, dbType);
+    }
+
+    @Override
+    public Map<ByteArrayWrapper, byte[]> getReferencedTrieNodes(
+            byte[] value, int limit, TrieDatabase dbType) {
+        // TODO: add functionality for retrieving referenced nodes
+
+        return new HashMap<>();
     }
 
     /**

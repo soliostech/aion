@@ -23,6 +23,7 @@
 
 package org.aion.zero.impl.sync.handler;
 
+import java.util.Map;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.p2p.Ctrl;
 import org.aion.p2p.Handler;
@@ -47,6 +48,9 @@ public final class RequestTrieStateHandler extends Handler {
     private final IAionBlockchain chain;
 
     private final IP2pMgr p2p;
+
+    // limits the number of key-value pairs returned to one request
+    private static final int MAXIMUM_BATCH_SIZE = 100;
 
     /**
      * Constructor.
@@ -75,6 +79,7 @@ public final class RequestTrieStateHandler extends Handler {
         if (request != null) {
             TrieDatabase dbType = request.getDbType();
             ByteArrayWrapper key = ByteArrayWrapper.wrap(request.getNodeKey());
+            int limit = request.getLimit();
 
             if (log.isDebugEnabled()) {
                 this.log.debug("<req-trie from-db={} key={} peer={}>", dbType, key, displayId);
@@ -84,9 +89,29 @@ public final class RequestTrieStateHandler extends Handler {
             byte[] value = chain.getTrieNode(key.getData(), dbType);
 
             if (value != null) {
-                // TODO: add functionality for sending batches of nodes
-                this.p2p.send(
-                        peerId, displayId, new ResponseTrieState(key.getData(), value, dbType));
+                ResponseTrieState response;
+
+                if (limit == 1) {
+                    // generate response without referenced nodes
+                    response = new ResponseTrieState(key, value, dbType);
+                } else {
+                    // check for internal limit on the request
+                    if (limit == 0) {
+                        limit = MAXIMUM_BATCH_SIZE;
+                    } else {
+                        limit = limit < MAXIMUM_BATCH_SIZE ? limit : MAXIMUM_BATCH_SIZE;
+                    }
+
+                    // determine if the node can be expanded
+                    Map<ByteArrayWrapper, byte[]> referencedNodes =
+                            chain.getReferencedTrieNodes(value, limit, dbType);
+
+                    // generate response with referenced nodes
+                    response = new ResponseTrieState(key, value, referencedNodes, dbType);
+                }
+
+                // reply to request
+                this.p2p.send(peerId, displayId, response);
             }
         } else {
             this.log.error("<req-trie decode-error msg-bytes={} peer={}>", message.length, peerId);

@@ -24,7 +24,9 @@
 package org.aion.zero.impl.core;
 
 import java.util.List;
+import java.util.Map;
 import org.aion.base.db.IRepository;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.mcf.core.IBlockchain;
 import org.aion.zero.impl.BlockContext;
 import org.aion.zero.impl.sync.TrieDatabase;
@@ -73,9 +75,22 @@ public interface IAionBlockchain
      * @param key the key of the node to be retrieved
      * @param dbType the database where the key should be found
      * @return the {@code byte} array value associated with the given key or {@code null} when the
-     *     key cannot be found in the database.
+     *     key cannot be found in the database
      * @throws IllegalArgumentException if the given key is null or the database type is not
      *     supported
      */
     byte[] getTrieNode(byte[] key, TrieDatabase dbType);
+
+    /**
+     * @param value a trie node value which may be referencing other nodes
+     * @param limit the maximum number of key-value pairs to be retrieved by this method, which
+     *     limits the search in the trie; zero and negative values for the limit will result in no
+     *     search and an empty map will be returned
+     * @param dbType the database where the value was stored and further keys should be searched for
+     * @return an empty map when the value does not reference other trie nodes or the given limit is
+     *     invalid, or a map containing all the referenced nodes reached while keeping within the
+     *     limit on the result size
+     */
+    Map<ByteArrayWrapper, byte[]> getReferencedTrieNodes(
+            byte[] value, int limit, TrieDatabase dbType);
 }
