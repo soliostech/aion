@@ -530,9 +530,7 @@ public class AionBlockchainImpl implements IAionBlockchain {
     @Override
     public Map<ByteArrayWrapper, byte[]> getReferencedTrieNodes(
             byte[] value, int limit, TrieDatabase dbType) {
-        // TODO: add functionality for retrieving referenced nodes
-
-        return new HashMap<>();
+        return repository.getReferencedTrieNodes(value, limit, dbType);
     }
 
     /**

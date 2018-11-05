@@ -82,6 +82,9 @@ public interface IAionBlockchain
     byte[] getTrieNode(byte[] key, TrieDatabase dbType);
 
     /**
+     * Retrieves nodes referenced by a trie node value, where the size of the result is bounded by
+     * the given limit.
+     *
      * @param value a trie node value which may be referencing other nodes
      * @param limit the maximum number of key-value pairs to be retrieved by this method, which
      *     limits the search in the trie; zero and negative values for the limit will result in no
