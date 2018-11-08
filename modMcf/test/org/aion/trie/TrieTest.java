@@ -1008,4 +1008,34 @@ public class TrieTest {
         assertThat(missing).hasSize(2);
         assertThat(missing).isEqualTo(expected);
     }
+
+    @Test
+    public void testGetReferencedTrieNodes() {
+        MockDB mockDB = new MockDB("temp");
+        mockDB.open();
+        TrieImpl trie = new TrieImpl(mockDB);
+
+        for (Map.Entry<ByteArrayWrapper, byte[]> e : getSampleTrieUpdates().entrySet()) {
+            trie.update(e.getKey().getData(), e.getValue());
+        }
+        trie.getCache().commit(true);
+
+        byte[] root = trie.getRootHash();
+        byte[] value = mockDB.get(root).get();
+
+        trie = new TrieImpl(mockDB);
+
+        // empty for limit <= 0
+        assertThat(trie.getReferencedTrieNodes(value, -2)).isEmpty();
+        assertThat(trie.getReferencedTrieNodes(value, 0)).isEmpty();
+
+        // partial size
+        assertThat(trie.getReferencedTrieNodes(value, 3).size()).isEqualTo(3);
+        assertThat(trie.getReferencedTrieNodes(value, 4).size()).isEqualTo(4);
+
+        // full size except for initial root
+        int full = trie.getTrieSize(root) - 1;
+        assertThat(trie.getReferencedTrieNodes(value, full).size()).isEqualTo(full);
+        assertThat(trie.getReferencedTrieNodes(value, 2 * full).size()).isEqualTo(full);
+    }
 }

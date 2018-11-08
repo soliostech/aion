@@ -917,7 +917,7 @@ public class TrieImpl implements Trie {
                 Value node = this.getCache().get(myHash);
                 if (node == null) {
                     // performs action for missing nodes
-                    scanAction.doOnNode(myHash, node);
+                    scanAction.doOnNode(myHash, null);
                 } else {
                     if (node.isList()) {
                         List<Object> siblings = node.asList();
