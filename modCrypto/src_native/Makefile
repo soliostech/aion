@@ -1,7 +1,5 @@
 AION_HOME=../..
 
-JAVA_HOME=/usr/lib/jvm/jdk-11.0.1
-
 SONAME=libblake2b.so
 TARGET=${AION_HOME}/native/linux/blake2b/$(SONAME)
 

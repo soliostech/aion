@@ -18,7 +18,7 @@
   <target name="build-project" depends="clean, init">
     <echo message="building ${ant.project.name} output: ${jar.name}"/>
     <javac fork="true" 
-           executable="/usr/lib/jvm/jdk-11.0.1/bin/javac" 
+           executable="javac" 
            debug="true" 
            debuglevel="source,lines,vars" 
            destdir="${build.dir}" 
