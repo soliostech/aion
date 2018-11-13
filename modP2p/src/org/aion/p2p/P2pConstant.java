@@ -44,6 +44,11 @@ public class P2pConstant {
             REQUEST_SIZE = 24,
             LARGE_REQUEST_SIZE = 40,
 
+            // fast sync constants
+            REQUIRED_CONNECTIONS = 6,
+            PIVOT_DISTANCE_TO_HEAD = 1024,
+            PIVOT_RESET_DISTANCE = 2 * PIVOT_DISTANCE_TO_HEAD,
+
             /**
              * The number of blocks overlapping with the current chain requested at import when the
              * local best block is far from the top block in the peer's chain.
