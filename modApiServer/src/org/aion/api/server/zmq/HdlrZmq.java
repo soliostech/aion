@@ -23,6 +23,8 @@
 
 package org.aion.api.server.zmq;
 
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import org.aion.api.server.ApiUtil;
 import org.aion.api.server.IApiAion;
 import org.aion.api.server.pb.IHdlr;
@@ -35,9 +37,6 @@ import org.aion.base.util.NativeLoader;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.slf4j.Logger;
-
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 public class HdlrZmq implements IHdlr {
 
@@ -63,8 +62,10 @@ public class HdlrZmq implements IHdlr {
         try {
             return this.api.process(request, socketId);
         } catch (Exception e) {
-            LOGGER.error("zmq incoming msg process failed! " + e.getMessage());
-            return ApiUtil.toReturnHeader(this.api.getApiVersion(), Message.Retcode.r_fail_zmqHandler_exception_VALUE,
+            LOGGER.error("zmq incoming msg process failed! ", e);
+            return ApiUtil.toReturnHeader(
+                    this.api.getApiVersion(),
+                    Message.Retcode.r_fail_zmqHandler_exception_VALUE,
                     ApiUtil.getApiMsgHash(request));
         }
     }
@@ -79,9 +80,9 @@ public class HdlrZmq implements IHdlr {
                 return;
             }
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
-            LOGGER.error("zmq takeTxWait failed! " + e.getMessage());
+            LOGGER.error("zmq takeTxWait failed! ", e);
         }
         Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry = null;
         if (txWait != null) {
@@ -89,8 +90,16 @@ public class HdlrZmq implements IHdlr {
         }
 
         if (entry != null) {
-            this.api.getPendingStatus().add(new TxPendingStatus(txWait.getTxHash(), entry.getValue(), entry.getKey(),
-                    txWait.getState(), txWait.getTxResult(), txWait.getTxReceipt().getError()));
+            this.api
+                    .getPendingStatus()
+                    .add(
+                            new TxPendingStatus(
+                                    txWait.getTxHash(),
+                                    entry.getValue(),
+                                    entry.getKey(),
+                                    txWait.getState(),
+                                    txWait.getTxResult(),
+                                    txWait.getTxReceipt().getError()));
 
             // INCLUDED(3);
             if (txWait.getState() == 1 || txWait.getState() == 2) {
@@ -115,7 +124,8 @@ public class HdlrZmq implements IHdlr {
     }
 
     byte[] toRspMsg(byte[] msgHash, int txCode, String error, byte[] result) {
-        return ApiUtil.toReturnHeader(this.api.getApiVersion(), txCode, msgHash, error.getBytes(), result);
+        return ApiUtil.toReturnHeader(
+                this.api.getApiVersion(), txCode, msgHash, error.getBytes(), result);
     }
 
     @Override

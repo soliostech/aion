@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
  *     This file is part of the aion network project.
@@ -17,11 +17,9 @@
  *     along with the aion network project source files.
  *     If not, see <https://www.gnu.org/licenses/>.
  *
- *
  * Contributors:
  *     Aion foundation.
- *
- ******************************************************************************/
+ */
 package org.aion.mcf.core;
 
 import java.math.BigInteger;
@@ -29,10 +27,9 @@ import java.math.BigInteger;
 import org.aion.mcf.types.IPowBlockHeader;
 
 /**
- * Interface for retrieving difficulty calculations for a particular
- * chain configuration, note that depending on where the corresponding
- * class is generated, it will utilized different algorithms. However the
- * common interface of the current and parent blockHeader will remain.
+ * Interface for retrieving difficulty calculations for a particular chain configuration, note that
+ * depending on where the corresponding class is generated, it will utilized different algorithms.
+ * However the common interface of the current and parent blockHeader will remain.
  *
  * @author yao
  */

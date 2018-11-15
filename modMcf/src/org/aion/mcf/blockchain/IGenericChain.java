@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
  *     This file is part of the aion network project.
@@ -17,23 +17,28 @@
  *     along with the aion network project source files.
  *     If not, see <https://www.gnu.org/licenses/>.
  *
- *
  * Contributors:
  *     Aion foundation.
+ */
+package org.aion.mcf.blockchain;
 
- ******************************************************************************/
-package org.aion.mcf.tx;
+import org.aion.base.type.IBlock;
+import org.aion.mcf.core.AbstractTxInfo;
+import org.aion.mcf.db.IBlockStoreBase;
+import org.aion.mcf.types.AbstractBlockHeader;
 
-import java.util.List;
+/** Generic Chain interface. */
+public interface IGenericChain<BLK extends IBlock, BH extends AbstractBlockHeader> {
 
-import java.util.concurrent.Future;
+    BLK getBlockByNumber(long number);
 
-import org.aion.base.type.ITransaction;
+    BLK getBlockByHash(byte[] hash);
 
-public interface ITransactionExecThread<TX extends ITransaction> {
-    Future<List<TX>> submitTransaction(TX tx);
+    IBlockStoreBase<?, ?> getBlockStore();
 
-    Future<List<TX>> submitTransaction(List<TX> tx);
+    BLK getBestBlock();
 
-    void shutdown();
+    AbstractTxInfo getTransactionInfo(byte[] hash);
+
+    void flush();
 }

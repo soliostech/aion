@@ -1,32 +1,25 @@
 /*
  * Copyright (c) 2017-2018 Aion foundation.
  *
- * This file is part of the aion network project.
+ *     This file is part of the aion network project.
  *
- * The aion network project is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, either version 3 of
- * the License, or any later version.
+ *     The aion network project is free software: you can redistribute it
+ *     and/or modify it under the terms of the GNU General Public License
+ *     as published by the Free Software Foundation, either version 3 of
+ *     the License, or any later version.
  *
- * The aion network project is distributed in the hope that it will
- * be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ *     The aion network project is distributed in the hope that it will
+ *     be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *     See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with the aion network project source files.
- * If not, see <https://www.gnu.org/licenses/>.
+ *     You should have received a copy of the GNU General Public License
+ *     along with the aion network project source files.
+ *     If not, see <https://www.gnu.org/licenses/>.
  *
- * The aion network project leverages useful source code from other
- * open source projects. We greatly appreciate the effort that was
- * invested in these projects and we thank the individual contributors
- * for their work. For provenance information and contributors
- * please see <https://github.com/aionnetwork/aion/wiki/Contributors>.
- *
- * Contributors to the aion source files in decreasing order of code volume:
- * Aion foundation.
+ * Contributors:
+ *     Aion foundation.
  */
-
 package org.aion.zero.impl.sync;
 
 import static org.aion.p2p.P2pConstant.COEFFICIENT_NORMAL_PEERS;
@@ -48,6 +41,8 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.aion.base.util.ByteArrayWrapper;
@@ -85,6 +80,8 @@ final class TaskImportBlocks implements Runnable {
     private SortedSet<Long> baseList;
     private PeerState state;
 
+    private long lastCompactTime;
+
     TaskImportBlocks(
             final AionBlockchainImpl _chain,
             final AtomicBoolean _start,
@@ -102,7 +99,11 @@ final class TaskImportBlocks implements Runnable {
         this.log = _log;
         this.baseList = new TreeSet<>();
         this.state = new PeerState(NORMAL, 0L);
+        this.lastCompactTime = System.currentTimeMillis();
     }
+
+    ExecutorService executors =
+            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     @Override
     public void run() {
@@ -147,7 +148,7 @@ final class TaskImportBlocks implements Runnable {
                             peerState.getBase());
                 }
 
-                stats.update(getBestBlockNumber());
+                stats.update(bw.getDisplayId(), bw.getBlocks().size(), getBestBlockNumber());
             }
         }
         if (log.isDebugEnabled()) {
@@ -156,6 +157,7 @@ final class TaskImportBlocks implements Runnable {
                             + Thread.currentThread().getName()
                             + "] performing block imports was shutdown.");
         }
+        executors.shutdown();
     }
 
     /**
@@ -232,24 +234,22 @@ final class TaskImportBlocks implements Runnable {
             AionBlock b = batch.get(batch.size() - 1);
             Mode mode = givenState.getMode();
 
-            // last block exists when in FORWARD mode
-            if ((mode == FORWARD && isAlreadyStored(chain.getBlockStore(), b))
-                    // late returns on main chain requests
-                    // where the blocks are behind the local chain and can be discarded
-                    || (mode != FORWARD && b.getNumber() < getBestBlockNumber())) {
-
+            // last block already exists
+            // implies the full batch was already imported (but not filtered by the queue)
+            if (isAlreadyStored(chain.getBlockStore(), b)) {
                 // keeping track of the last block check
                 importedBlockHashes.put(ByteArrayWrapper.wrap(b.getHash()), true);
 
                 // skipping the batch
-                batch.clear();
                 if (log.isDebugEnabled()) {
                     log.debug(
-                            "Skip batch for node = {} in mode = {} with base = {}.",
+                            "Skip {} blocks from node = {} in mode = {} with base = {}.",
+                            batch.size(),
                             displayId,
                             givenState.getMode(),
                             givenState.getBase());
                 }
+                batch.clear();
 
                 // updating the state
                 if (mode == FORWARD) {
@@ -277,8 +277,8 @@ final class TaskImportBlocks implements Runnable {
                         last = b.getNumber() + 1;
                     }
                 }
-            } catch (Throwable e) {
-                log.error("<import-block throw> {}", e.toString());
+            } catch (Exception e) {
+                log.error("<import-block throw> ", e);
                 if (e.getMessage() != null && e.getMessage().contains("No space left on device")) {
                     log.error("Shutdown due to lack of disk space.");
                     System.exit(0);
@@ -293,25 +293,47 @@ final class TaskImportBlocks implements Runnable {
 
                 // if any block results in NO_PARENT, all subsequent blocks will too
                 if (importResult == ImportResult.NO_PARENT) {
-                    int stored = chain.storePendingBlockRange(batch);
+                    executors.submit(new TaskStorePendingBlocks(chain, batch, displayId, log));
 
                     if (log.isDebugEnabled()) {
                         log.debug(
                                 "Stopped importing batch due to NO_PARENT result. "
-                                        + "Stored {} out of {} blocks starting at hash = {}, number = {} from node = {}.",
-                                stored,
+                                        + "Batch of {} blocks starting at hash = {}, number = {} from node = {} delegated to storage.",
                                 batch.size(),
                                 b.getShortHash(),
                                 b.getNumber(),
                                 displayId);
+                    } else {
+                        // message used instead of import NO_PARENT ones
+                        if (state.isInFastMode()) {
+                            log.info(
+                                    "<import-status: STORED {} blocks from node = {}, starting with hash = {}, number = {}, txs = {}>",
+                                    batch.size(),
+                                    displayId,
+                                    b.getShortHash(),
+                                    b.getNumber(),
+                                    b.getTransactionsList().size());
+                        }
                     }
 
                     switch (mode) {
                         case FORWARD:
-                        case NORMAL:
                             {
                                 // switch to backward mode
                                 state.setMode(BACKWARD);
+                                state.setBase(b.getNumber());
+                                break;
+                            }
+                        case NORMAL:
+                            {
+                                // requiring a minimum number of normal states
+                                if (countStates(getBestBlockNumber(), NORMAL, peerStates.values())
+                                        > MIN_NORMAL_PEERS) {
+                                    // switch to backward mode
+                                    state.setMode(BACKWARD);
+                                    state.setBase(b.getNumber());
+                                }
+                                break;
                             }
                         case BACKWARD:
                             {
@@ -321,18 +343,7 @@ final class TaskImportBlocks implements Runnable {
                             }
                         case LIGHTNING:
                             {
-                                if (stored < batch.size()) {
-                                    state =
-                                            attemptLightningJump(
-                                                    getBestBlockNumber(),
-                                                    state,
-                                                    peerStates.values(),
-                                                    baseList,
-                                                    chain);
-
-                                } else {
-                                    state.setBase(b.getNumber() + batch.size());
-                                }
+                                state.setBase(b.getNumber() + batch.size());
                                 break;
                             }
                         case THUNDER:
@@ -551,23 +562,37 @@ final class TaskImportBlocks implements Runnable {
         if (log.isDebugEnabled()) {
             // printing sync mode only when debug is enabled
             log.debug(
-                    "<import-status: node = {}, sync mode = {}, hash = {}, number = {}, txs = {}, result = {}, time elapsed = {} ms>",
+                    "<import-status: node = {}, sync mode = {}, hash = {}, number = {}, txs = {}, block time = {}, result = {}, time elapsed = {} ms>",
                     displayId,
                     (state != null ? state.getMode() : NORMAL),
                     b.getShortHash(),
                     b.getNumber(),
                     b.getTransactionsList().size(),
+                    b.getTimestamp(),
                     importResult,
                     t2 - t1);
         } else {
-            log.info(
-                    "<import-status: node = {}, hash = {}, number = {}, txs = {}, result = {}, time elapsed = {} ms>",
-                    displayId,
-                    b.getShortHash(),
-                    b.getNumber(),
-                    b.getTransactionsList().size(),
-                    importResult,
-                    t2 - t1);
+            // not printing this message when the state is in fast mode with no parent result
+            // a different message will be printed to indicate the storage of blocks
+            if (!state.isInFastMode() || importResult != ImportResult.NO_PARENT) {
+                log.info(
+                        "<import-status: node = {}, hash = {}, number = {}, txs = {}, result = {}, time elapsed = {} ms>",
+                        displayId,
+                        b.getShortHash(),
+                        b.getNumber(),
+                        b.getTransactionsList().size(),
+                        importResult,
+                        t2 - t1);
+            }
+        }
+        // trigger compact when IO is slow
+        // 1 sec import time and more than 30 sec since last compact
+        if (t2 - t1 > 1000 && t2 - lastCompactTime > 30000) {
+            t1 = System.currentTimeMillis();
+            this.chain.compactState();
+            t2 = System.currentTimeMillis();
+            log.info("Compacting state database due to slow IO time. Completed in {} ms.", t2 - t1);
+            lastCompactTime = t2;
         }
         return importResult;
     }
@@ -677,8 +702,8 @@ final class TaskImportBlocks implements Runnable {
                             // stop importing this queue
                             break;
                         }
-                    } catch (Throwable e) {
-                        log.error("<import-block throw> {}", e.toString());
+                    } catch (Exception e) {
+                        log.error("<import-block throw> ", e);
                         if (e.getMessage() != null
                                 && e.getMessage().contains("No space left on device")) {
                             log.error("Shutdown due to lack of disk space.");
@@ -691,7 +716,8 @@ final class TaskImportBlocks implements Runnable {
             }
 
             // remove imported data from storage
-            chain.dropImported(level, importedQueues, levelFromDisk);
+            executors.submit(
+                    new TaskDropImportedBlocks(chain, level, importedQueues, levelFromDisk, log));
 
             // increment level
             level++;

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
  *     This file is part of the aion network project.
@@ -19,13 +19,12 @@
  *
  * Contributors:
  *     Aion foundation.
- *     
- ******************************************************************************/
+ */
+
 package org.aion.zero.impl.blockchain;
 
 import java.math.BigInteger;
 import java.util.List;
-
 import org.aion.base.db.IRepository;
 import org.aion.base.type.Address;
 import org.aion.zero.blockchain.IPowChain;

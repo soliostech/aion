@@ -1,4 +1,4 @@
-/* ******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
  *     This file is part of the aion network project.
@@ -19,14 +19,14 @@
  *
  * Contributors:
  *     Aion foundation.
- ******************************************************************************/
+ */
+
 package org.aion.zero.impl.db;
 
 import static org.aion.base.util.ByteUtil.EMPTY_BYTE_ARRAY;
 import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
 import static org.aion.zero.impl.AionHub.INIT_ERROR_EXIT_CODE;
 
-import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -590,6 +590,9 @@ public class AionRepositoryImpl
             repo.worldState = repo.createStateTrie();
             repo.worldState.setRoot(root);
 
+            // gives snapshots access to the pending store
+            repo.pendingStore = this.pendingStore;
+
             return repo;
         } finally {
             rwLock.readLock().unlock();
@@ -768,9 +771,9 @@ public class AionRepositoryImpl
     public String toString() {
         return "AionRepositoryImpl{ identityHashCode="
                 + System.identityHashCode(this)
-                + ", "
-                + //
-                "databaseGroupSize="
+                + ", snapshot: "
+                + this.isSnapshot()
+                + ", databaseGroupSize="
                 + (databaseGroup == null ? 0 : databaseGroup.size())
                 + '}';
     }
@@ -786,6 +789,15 @@ public class AionRepositoryImpl
             } else {
                 LOG.error("Database group is null.");
             }
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+    public void compactState() {
+        rwLock.writeLock().lock();
+        try {
+            this.stateDatabase.compact();
         } finally {
             rwLock.writeLock().unlock();
         }

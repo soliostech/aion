@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2017-2018 Aion foundation.
  *
  *     This file is part of the aion network project.
@@ -17,21 +17,17 @@
  *     along with the aion network project source files.
  *     If not, see <https://www.gnu.org/licenses/>.
  *
- *
  * Contributors:
  *     Aion foundation.
- ******************************************************************************/
+ */
 package org.aion.mcf.types;
 
 import java.math.BigInteger;
-
 import org.aion.base.type.Address;
 import org.aion.base.type.IBlockHeader;
 import org.spongycastle.util.BigIntegers;
 
-/**
- * Abstract BlockHeader.
- */
+/** Abstract BlockHeader. */
 public abstract class AbstractBlockHeader implements IBlockHeader {
 
     public static final int NONCE_LENGTH = 32;
@@ -111,8 +107,7 @@ public abstract class AbstractBlockHeader implements IBlockHeader {
         this.solution = solution;
     }
 
-    public AbstractBlockHeader() {
-    }
+    public AbstractBlockHeader() {}
 
     public byte[] getParentHash() {
         return parentHash;
