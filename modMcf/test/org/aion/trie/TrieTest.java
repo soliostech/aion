@@ -45,6 +45,7 @@ import org.aion.base.util.ByteArrayWrapper;
 import org.aion.crypto.HashUtil;
 import org.aion.db.impl.mockdb.MockDB;
 import org.aion.mcf.trie.TrieImpl;
+import org.aion.rlp.Value;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1037,5 +1038,45 @@ public class TrieTest {
         int full = trie.getTrieSize(root) - 1;
         assertThat(trie.getReferencedTrieNodes(value, full).size()).isEqualTo(full);
         assertThat(trie.getReferencedTrieNodes(value, 2 * full).size()).isEqualTo(full);
+    }
+
+    @Test
+    public void testGetReferencedTrieNodes_withStartFromAllNodes() {
+        MockDB mockDB = new MockDB("temp");
+        mockDB.open();
+        TrieImpl trie = new TrieImpl(mockDB);
+
+        for (Map.Entry<ByteArrayWrapper, byte[]> e : getSampleTrieUpdates().entrySet()) {
+            trie.update(e.getKey().getData(), e.getValue());
+        }
+        trie.getCache().commit(true);
+
+        byte[] value, root = trie.getRootHash();
+        Set<ByteArrayWrapper> allKeys = trie.getTrieKeys(root);
+        trie = new TrieImpl(mockDB);
+        Value v;
+
+        for (ByteArrayWrapper key : allKeys) {
+            value = mockDB.get(key.getData()).get();
+            v = Value.fromRlpEncoded(value);
+
+            // empty for limit <= 0
+            assertThat(trie.getReferencedTrieNodes(value, -2)).isEmpty();
+            assertThat(trie.getReferencedTrieNodes(value, 0)).isEmpty();
+
+            // partial size = 1 for non-leafs and 0 for leafs
+            assertThat(trie.getReferencedTrieNodes(value, 1).size()).isAtMost(1);
+
+            if (v.isList() && v.asList().size() > 2) {
+                // partial size = 4 for branch node
+                assertThat(trie.getReferencedTrieNodes(value, 100).size()).isEqualTo(4);
+            } else if (v.isList()) {
+                // at most whole list
+                assertThat(trie.getReferencedTrieNodes(value, 100).size()).isAtMost(5);
+            } else {
+                // partial size = 0 for leafs
+                assertThat(trie.getReferencedTrieNodes(value, 100).size()).isAtMost(0);
+            }
+        }
     }
 }
