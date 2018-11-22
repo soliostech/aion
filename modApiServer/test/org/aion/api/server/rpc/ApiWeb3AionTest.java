@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import io.undertow.util.FileUtils;
 import java.io.File;
@@ -42,6 +43,7 @@ import org.aion.crypto.ed25519.ECKeyEd25519;
 import org.aion.mcf.account.AccountManager;
 import org.aion.mcf.account.Keystore;
 import org.aion.zero.impl.blockchain.AionImpl;
+import org.aion.zero.impl.cli.Cli;
 import org.aion.zero.impl.config.CfgAion;
 import org.aion.zero.impl.core.IAionBlockchain;
 import org.aion.zero.impl.db.AionRepositoryImpl;
@@ -51,21 +53,38 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ApiWeb3AionTest {
     private static final String BASE_PATH = System.getProperty("user.dir");
-    private static final File GENESIS = new File(BASE_PATH + "/test_resources/genesis.json");
-    private static final File CONFIG = new File(BASE_PATH + "/test_resources/config.xml");
+    private static final File TEST_GENESIS = new File(BASE_PATH + "/test_resources/genesis.json");
+    private static final File TEST_CONFIG = new File(BASE_PATH + "/test_resources/config.xml");
     private static final File KEYSTORE = new File(BASE_PATH + "/keystore");
     private static final File DATABASE = new File(BASE_PATH + "/testDatabase");
+    private static final File CONFIG_FOLDER = new File(BASE_PATH + "/config");
+    private static final File CONFIG_MAINNET_FOLDER = new File(CONFIG_FOLDER + "/mainnet");
+    private static final File GENESIS = new File(BASE_PATH + "/config/mainnet/genesis.json");
+    private static final File CONFIG = new File(BASE_PATH + "/config/mainnet/config.xml");
+
     private long testStartTime;
     private ApiWeb3Aion web3Api;
     private AionImpl impl;
 
     @Before
     public void setUp() {
-        CfgAion.inst().setReadConfigFiles(CONFIG, GENESIS);
+//        try {
+//            if (!CONFIG_FOLDER.exists()) CONFIG_FOLDER.mkdir();
+//            if (!CONFIG_MAINNET_FOLDER.exists()) CONFIG_MAINNET_FOLDER.mkdir();
+//            if (!GENESIS.exists()) GENESIS.createNewFile();
+//            if (!CONFIG.exists()) CONFIG.createNewFile();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        Cli.copyRecursively(TEST_GENESIS, GENESIS);
+//        Cli.copyRecursively(TEST_CONFIG, CONFIG);
+
+        //CfgAion.inst().setReadConfigFiles(CONFIG, GENESIS);
         CfgAion.inst().setDatabaseDir(DATABASE);
         impl = AionImpl.inst();
         web3Api = new ApiWeb3Aion(impl);
@@ -87,6 +106,15 @@ public class ApiWeb3AionTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void testPrintPath() {
+        assertEquals(
+            "genesis path: "
+                + CfgAion.inst().getInitialGenesisFile().getAbsolutePath()
+                + "\ngenesis: "
+                + CfgAion.inst().getGenesis().toString(), "test");
     }
 
     @Test
