@@ -75,6 +75,12 @@ public final class FastSyncMgr {
         this.chain = chain;
     }
 
+    public enum Option {
+        SYNC, // full fast sync functionality
+        SEED, // returns fast sync data, but does not request it
+        VERIFY // testing functionality to verify that requested and computed data are equivalent
+    }
+
     public void addImportedNode(ByteArrayWrapper key, byte[] value) {
         if (enabled) {
             importedTrieNodes.put(key, value);
