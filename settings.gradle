@@ -13,6 +13,7 @@ include 'modAionBase', 'modAion', 'modAionImpl',
     'modApiServer',
     'aion_fastvm/modFastVM',
     'aion_api',
+    'aion_vm_api',
     'modBoot'
 
 if (!hasProperty('noGui')) {
@@ -20,5 +21,3 @@ if (!hasProperty('noGui')) {
 }
 
 project(":aion_fastvm/modFastVM").name = "aion_fastvm"
-
-
