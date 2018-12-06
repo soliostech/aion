@@ -474,7 +474,7 @@ public class ApiAion0Test {
         Message.req_getTransactionReceipt reqBody =
                 Message.req_getTransactionReceipt
                         .newBuilder()
-                        .setTxHash(ByteString.copyFrom(tx.getHash()))
+                        .setTxHash(ByteString.copyFrom(tx.getTransactionHash()))
                         .build();
 
         rsp =
@@ -619,7 +619,7 @@ public class ApiAion0Test {
         Message.rsp_getTransaction rslt = Message.rsp_getTransaction.parseFrom(stripHeader(rsp));
         assertEquals(blk.getNumber(), rslt.getBlocknumber());
         assertEquals(ByteString.copyFrom(tx.getData()), rslt.getData());
-        assertEquals(tx.getNrgPrice(), rslt.getNrgPrice());
+        assertEquals(tx.getEnergyPrice(), rslt.getNrgPrice());
 
         rsp =
                 sendRequest(
@@ -673,7 +673,7 @@ public class ApiAion0Test {
         Message.rsp_getTransaction rslt = Message.rsp_getTransaction.parseFrom(stripHeader(rsp));
         assertEquals(blk.getNumber(), rslt.getBlocknumber());
         assertEquals(ByteString.copyFrom(tx.getData()), rslt.getData());
-        assertEquals(tx.getNrgPrice(), rslt.getNrgPrice());
+        assertEquals(tx.getEnergyPrice(), rslt.getNrgPrice());
 
         rsp =
                 sendRequest(
@@ -816,7 +816,7 @@ public class ApiAion0Test {
         Message.req_getTransactionByHash reqBody =
                 Message.req_getTransactionByHash
                         .newBuilder()
-                        .setTxHash(ByteString.copyFrom(tx.getHash()))
+                        .setTxHash(ByteString.copyFrom(tx.getTransactionHash()))
                         .build();
 
         rsp =
@@ -830,7 +830,7 @@ public class ApiAion0Test {
         Message.rsp_getTransaction rslt = Message.rsp_getTransaction.parseFrom(stripHeader(rsp));
         assertEquals(blk.getNumber(), rslt.getBlocknumber());
         assertEquals(ByteString.copyFrom(tx.getData()), rslt.getData());
-        assertEquals(tx.getNrgPrice(), rslt.getNrgPrice());
+        assertEquals(tx.getEnergyPrice(), rslt.getNrgPrice());
 
         rsp = sendRequest(Message.Servs.s_hb_VALUE, Message.Funcs.f_getTransactionByHash_VALUE);
 
@@ -872,7 +872,7 @@ public class ApiAion0Test {
                         .setBlocknumber(blk.getNumber())
                         .setAddress(
                                 ByteString.copyFrom(
-                                        blk.getTransactionsList().get(0).getFrom().toBytes()))
+                                        blk.getTransactionsList().get(0).getSenderAddress().toBytes()))
                         .build();
 
         rsp =
