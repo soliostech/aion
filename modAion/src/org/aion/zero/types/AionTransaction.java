@@ -323,7 +323,7 @@ public class AionTransaction extends AbstractTransaction {
     }
 
     @Override
-    public Address getSenderAddress() {
+    public synchronized Address getSenderAddress() {
         if (from != null) {
             return this.from;
         }
