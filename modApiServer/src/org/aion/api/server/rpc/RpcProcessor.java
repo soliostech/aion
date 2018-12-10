@@ -47,6 +47,7 @@ public class RpcProcessor {
     private ExecutorService executor;
     private CompletionService<JSONObject> batchCallCompletionService;
     private final int SHUTDOWN_WAIT_SECONDS = 5;
+    private final String CALLIDX = "callIdx";
 
     public RpcProcessor(
             final List<String> enabledGroups,
@@ -162,12 +163,13 @@ public class RpcProcessor {
             if (shouldTime) timer = Stopwatch.createStarted();
 
             for (int i = 0; i < reqBodies.length(); i++) {
-                batchCallCompletionService.submit(new BatchCallTask(reqBodies.getJSONObject(i)));
+                batchCallCompletionService.submit(new BatchCallTask(reqBodies.getJSONObject(i), i));
             }
 
             JSONArray respBodies = new JSONArray();
             for (int i = 0; i < reqBodies.length(); i++) {
-                respBodies.put(batchCallCompletionService.take().get());
+                JSONObject jo = batchCallCompletionService.take().get();
+                respBodies.put((int) jo.remove(CALLIDX), jo);
             }
 
             if (shouldTime) {
@@ -205,18 +207,22 @@ public class RpcProcessor {
 
     private class BatchCallTask implements Callable<JSONObject> {
         private JSONObject task;
+        private int callIdx;
 
-        public BatchCallTask(JSONObject task) {
+        public BatchCallTask(JSONObject task, int callIndex) {
             this.task = task;
+            this.callIdx = callIndex;
         }
 
         @Override
         public JSONObject call() {
             try {
-                return processObject(task);
+                return processObject(task).put(CALLIDX, callIdx);
             } catch (Exception e) {
                 LOG.debug("<rpc-server - processObject failed in batch request>", e);
-                return new RpcMsg(null, RpcError.INVALID_REQUEST, "INVALID_REQUEST").toJson();
+                return new RpcMsg(null, RpcError.INVALID_REQUEST, "INVALID_REQUEST")
+                        .toJson()
+                        .put(CALLIDX, callIdx);
             }
         }
     }
