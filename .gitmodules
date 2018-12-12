@@ -1,11 +1,11 @@
 [submodule "aion_fastvm"]
     path = aion_fastvm
     url = https://github.com/aionnetwork/aion_fastvm
-    branch = vm-api-dev
+    branch = vm-api
 [submodule "aion_api"]
     path = aion_api
     url = https://github.com/aionnetwork/aion_api
-    branch = vm-api-dev
+    branch = vm-api
 [submodule "aion_vm_api"]
 	path = aion_vm_api
 	url = https://github.com/aionnetwork/vm_api.git
