@@ -34,7 +34,6 @@ import org.aion.base.db.IRepositoryCache;
 import org.aion.base.type.AionAddress;
 import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.ByteUtil;
-import org.aion.base.vm.IDataWord;
 import org.aion.mcf.core.AccountState;
 import org.aion.mcf.db.IBlockStoreBase;
 import org.aion.mcf.vm.types.DataWord;
@@ -49,7 +48,7 @@ public class DummyRepo implements IRepositoryCache<AccountState, IBlockStoreBase
     // Made this alterable for testing since this default value is not always what real
     // implementations
     // do ... and don't want to break tests that rely on this value.
-    public IDataWord storageErrorReturn = DoubleDataWord.ZERO;
+    public ByteArrayWrapper storageErrorReturn = DoubleDataWord.ZERO.toWrapper();
 
     public DummyRepo() {}
 
@@ -152,7 +151,7 @@ public class DummyRepo implements IRepositoryCache<AccountState, IBlockStoreBase
                 return new DoubleDataWord(res).toWrapper();
             }
         }
-        return storageErrorReturn.toWrapper();
+        return storageErrorReturn;
     }
 
     @Override
