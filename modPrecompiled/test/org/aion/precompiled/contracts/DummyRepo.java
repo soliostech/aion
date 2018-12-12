@@ -32,15 +32,16 @@ import org.aion.base.db.IContractDetails;
 import org.aion.base.db.IRepository;
 import org.aion.base.db.IRepositoryCache;
 import org.aion.base.type.AionAddress;
+import org.aion.base.util.ByteArrayWrapper;
 import org.aion.base.util.ByteUtil;
+import org.aion.base.vm.IDataWord;
 import org.aion.mcf.core.AccountState;
 import org.aion.mcf.db.IBlockStoreBase;
 import org.aion.mcf.vm.types.DataWord;
 import org.aion.mcf.vm.types.DoubleDataWord;
 import org.aion.vm.api.interfaces.Address;
-import org.aion.base.vm.IDataWord;
 
-public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlockStoreBase<?, ?>> {
+public class DummyRepo implements IRepositoryCache<AccountState, IBlockStoreBase<?, ?>> {
     private Map<Address, AccountState> accounts = new HashMap<>();
     private Map<Address, byte[]> contracts = new HashMap<>();
     private Map<Address, Map<String, byte[]>> storage = new HashMap<>();
@@ -108,7 +109,7 @@ public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlo
     }
 
     @Override
-    public IContractDetails<IDataWord> getContractDetails(Address addr) {
+    public IContractDetails getContractDetails(Address addr) {
         throw new UnsupportedOperationException();
     }
 
@@ -129,28 +130,29 @@ public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlo
     }
 
     @Override
-    public Map<IDataWord, IDataWord> getStorage(Address address, Collection<IDataWord> keys) {
+    public Map<ByteArrayWrapper, ByteArrayWrapper> getStorage(
+            Address address, Collection<ByteArrayWrapper> keys) {
         throw new RuntimeException("Not supported");
     }
 
     @Override
-    public void addStorageRow(Address addr, IDataWord key, IDataWord value) {
+    public void addStorageRow(Address addr, ByteArrayWrapper key, ByteArrayWrapper value) {
         Map<String, byte[]> map = storage.computeIfAbsent(addr, k -> new HashMap<>());
         map.put(key.toString(), value.getData());
     }
 
     @Override
-    public IDataWord getStorageValue(Address addr, IDataWord key) {
+    public ByteArrayWrapper getStorageValue(Address addr, ByteArrayWrapper key) {
         Map<String, byte[]> map = storage.get(addr);
         if (map != null && map.containsKey(key.toString())) {
             byte[] res = map.get(key.toString());
             if (res.length == DataWord.BYTES) {
-                return new DataWord(res);
+                return new DataWord(res).toWrapper();
             } else if (res.length == DoubleDataWord.BYTES) {
-                return new DoubleDataWord(res);
+                return new DoubleDataWord(res).toWrapper();
             }
         }
-        return storageErrorReturn;
+        return storageErrorReturn.toWrapper();
     }
 
     @Override
@@ -174,7 +176,7 @@ public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlo
     }
 
     @Override
-    public IRepositoryCache<AccountState, IDataWord, IBlockStoreBase<?, ?>> startTracking() {
+    public IRepositoryCache<AccountState, IBlockStoreBase<?, ?>> startTracking() {
         return new DummyRepo(this);
     }
 
@@ -203,7 +205,7 @@ public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlo
     @Override
     public void updateBatch(
             Map<Address, AccountState> accountStates,
-            Map<Address, IContractDetails<IDataWord>> contractDetailes) {
+            Map<Address, IContractDetails> contractDetailes) {
         throw new UnsupportedOperationException();
     }
 
@@ -216,12 +218,12 @@ public class DummyRepo implements IRepositoryCache<AccountState, IDataWord, IBlo
     public void loadAccountState(
             Address addr,
             Map<Address, AccountState> cacheAccounts,
-            Map<Address, IContractDetails<IDataWord>> cacheDetails) {
+            Map<Address, IContractDetails> cacheDetails) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IRepository<AccountState, IDataWord, IBlockStoreBase<?, ?>> getSnapshotTo(byte[] root) {
+    public IRepository<AccountState, IBlockStoreBase<?, ?>> getSnapshotTo(byte[] root) {
         throw new UnsupportedOperationException();
     }
 
