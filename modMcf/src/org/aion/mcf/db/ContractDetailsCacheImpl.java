@@ -69,7 +69,20 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
      */
     @Override
     public void put(ByteArrayWrapper key, ByteArrayWrapper value) {
+        if (value.isZero()) {
+            // TODO: remove when integrating the AVM
+            // used to ensure FVM correctness
+            throw new IllegalArgumentException(
+                    "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
+        }
+
         storage.put(key, value);
+        setDirty(true);
+    }
+
+    @Override
+    public void delete(ByteArrayWrapper key) {
+        storage.put(key, null);
         setDirty(true);
     }
 
@@ -90,15 +103,10 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
             }
             value = origContract.get(key);
             // TODO: the VM must pad the given ZERO value if expecting a fixed size byte array
-            value = (value == null) ? ByteArrayWrapper.ZERO : value;
-            storage.put(key.copy(), value.isZero() ? ByteArrayWrapper.ZERO.copy() : value.copy());
+            storage.put(key.copy(), value == null ? null : value.copy());
         }
 
-        if (value == null || value.isZero()) {
-            return null;
-        } else {
-            return value;
-        }
+        return value;
     }
 
     /**
@@ -140,7 +148,7 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
 
                 // we check if the value is not null,
                 // cause we keep all historical keys
-                if ((value != null) && (!value.isZero())) {
+                if (value != null) {
                     storage.put(key, value);
                 }
             }
@@ -224,7 +232,12 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
         }
 
         for (ByteArrayWrapper key : storage.keySet()) {
-            origContract.put(key, storage.get(key));
+            ByteArrayWrapper value = storage.get(key);
+            if (value != null) {
+                origContract.put(key, storage.get(key));
+            } else {
+                origContract.delete(key);
+            }
         }
 
         if (origContract instanceof AbstractContractDetails) {

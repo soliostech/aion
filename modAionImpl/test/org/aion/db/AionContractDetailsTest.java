@@ -193,9 +193,9 @@ public class AionContractDetailsTest {
         contractDetails.setAddress(address);
         contractDetails.put(new DataWord(key_0).toWrapper(), new DataWord(val_0).toWrapper());
         contractDetails.put(new DataWord(key_1).toWrapper(), new DataWord(val_1).toWrapper());
-        contractDetails.put(new DataWord(key_2).toWrapper(), new DataWord(val_2).toWrapper());
+        contractDetails.delete(new DataWord(key_2).toWrapper());
         contractDetails.put(new DataWord(key_3).toWrapper(), new DataWord(val_3).toWrapper());
-        contractDetails.put(new DataWord(key_4).toWrapper(), new DataWord(val_4).toWrapper());
+        contractDetails.delete(new DataWord(key_4).toWrapper());
         contractDetails.put(new DataWord(key_5).toWrapper(), new DataWord(val_5).toWrapper());
         contractDetails.put(new DataWord(key_6).toWrapper(), new DataWord(val_6).toWrapper());
         contractDetails.put(new DataWord(key_7).toWrapper(), new DataWord(val_7).toWrapper());
@@ -322,9 +322,8 @@ public class AionContractDetailsTest {
 
         DataWord deletedKey = elements.keySet().iterator().next();
 
-        deserialized.put(deletedKey.toWrapper(), DataWord.ZERO.toWrapper());
-        deserialized.put(
-                new DataWord(RandomUtils.nextBytes(16)).toWrapper(), DataWord.ZERO.toWrapper());
+        deserialized.delete(deletedKey.toWrapper());
+        deserialized.delete(new DataWord(RandomUtils.nextBytes(16)).toWrapper());
     }
 
     @Test
