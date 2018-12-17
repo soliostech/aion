@@ -28,21 +28,15 @@ import static org.aion.crypto.HashUtil.EMPTY_TRIE_HASH;
 import static org.aion.zero.impl.AionHub.INIT_ERROR_EXIT_CODE;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.aion.base.db.IByteArrayKeyValueDatabase;
-import org.aion.base.db.IContractDetails;
-import org.aion.base.db.IRepository;
-import org.aion.base.db.IRepositoryCache;
-import org.aion.base.db.IRepositoryConfig;
+import java.util.*;
+
+import org.aion.base.db.*;
 import org.aion.base.type.Address;
 import org.aion.base.util.Hex;
 import org.aion.base.vm.IDataWord;
+import org.aion.db.impl.DBVendor;
+import org.aion.db.impl.DatabaseFactory;
+import org.aion.mcf.config.CfgPrune;
 import org.aion.mcf.core.AccountState;
 import org.aion.mcf.db.AbstractRepository;
 import org.aion.mcf.db.ContractDetailsCacheImpl;
@@ -81,14 +75,34 @@ public class AionRepositoryImpl
 
     private static class AionRepositoryImplHolder {
         // configuration
-        private static CfgAion config = CfgAion.inst();
+        private static IRepositoryConfig repoConfig =
+                new IRepositoryConfig() {
+                    @Override
+                    public String getDbPath() {
+                        return "";
+                    }
+
+                    @Override
+                    public IPruneConfig getPruneConfig() {
+                        return new CfgPrune(false);
+                    }
+
+                    @Override
+                    public IContractDetails contractDetailsImpl() {
+                        return ContractDetailsAion.createForTesting(0, 1000000).getDetails();
+                    }
+
+                    @Override
+                    public Properties getDatabaseConfig(String db_name) {
+                        Properties props = new Properties();
+                        props.setProperty(DatabaseFactory.Props.DB_TYPE, DBVendor.MOCKDB.toValue());
+                        props.setProperty(DatabaseFactory.Props.ENABLE_HEAP_CACHE, "false");
+                        return props;
+                    }
+                };
         // repository singleton instance
         private static final AionRepositoryImpl inst =
-                new AionRepositoryImpl(
-                        new RepositoryConfig(
-                                config.getDatabasePath(),
-                                ContractDetailsAion.getInstance(),
-                                config.getDb()));
+                new AionRepositoryImpl(repoConfig);
     }
 
     public static AionRepositoryImpl inst() {
