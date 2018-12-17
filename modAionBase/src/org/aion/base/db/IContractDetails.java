@@ -44,14 +44,19 @@ import org.aion.vm.api.interfaces.Address;
 public interface IContractDetails {
 
     /**
-     * Inserts key and value as a key-value pair. If the underlying byte array of value consists
-     * only of zero bytes then ay existing key-value pair that has the same key as key will be
-     * deleted.
+     * Inserts a key-value pair containing the given key and the given value.
      *
-     * @param key The key.
-     * @param value The value.
+     * @param key the key to be inserted
+     * @param value the value to be inserted
      */
     void put(ByteArrayWrapper key, ByteArrayWrapper value);
+
+    /**
+     * Deletes any key-value pair that matches the given key.
+     *
+     * @param key the key to be deleted
+     */
+    void delete(ByteArrayWrapper key);
 
     /**
      * Returns the value associated with key.

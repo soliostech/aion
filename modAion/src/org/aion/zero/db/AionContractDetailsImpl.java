@@ -96,16 +96,27 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
         // we can differentiate between the two.
 
         if (value.isZero()) {
-            storageTrie.delete(key.getData());
-        } else {
-            // TODO: VM must handle padding
-            boolean isDouble = value.getData().length == DoubleDataWord.BYTES;
-            byte[] data =
-                    (isDouble)
-                            ? RLP.encodeElement(value.getData())
-                            : RLP.encodeElement(value.getNoLeadZeroesData());
-            storageTrie.update(key.getData(), data);
+            // TODO: remove when integrating the AVM
+            // used to ensure FVM correctness
+            throw new IllegalArgumentException(
+                    "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
         }
+
+        // TODO: VM must handle padding
+        boolean isDouble = value.getData().length == DoubleDataWord.BYTES;
+        byte[] data =
+                (isDouble)
+                        ? RLP.encodeElement(value.getData())
+                        : RLP.encodeElement(value.getNoLeadZeroesData());
+        storageTrie.update(key.getData(), data);
+
+        this.setDirty(true);
+        this.rlpEncoded = null;
+    }
+
+    @Override
+    public void delete(ByteArrayWrapper key) {
+        storageTrie.delete(key.getData());
 
         this.setDirty(true);
         this.rlpEncoded = null;
