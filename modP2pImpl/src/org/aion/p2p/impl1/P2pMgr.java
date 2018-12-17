@@ -157,18 +157,19 @@ public final class P2pMgr implements IP2pMgr {
 
         outGoingIP = checkOutGoingIP();
 
-        for (String _bootNode : _bootNodes) {
-            Node node = Node.parseP2p(_bootNode);
-            if (validateNode(node)) {
-                try {
-                    nodeMgr.addTempNode(node);
-                } catch (InterruptedException e) {
-                    p2pLOG.error("p2pMgr construct InterruptedException! " + node.toString(), e);
-                    continue;
-                }
-                nodeMgr.seedIpAdd(node.getIpStr());
-            }
-        }
+        // disabled P2p networking
+//        for (String _bootNode : _bootNodes) {
+//            Node node = Node.parseP2p(_bootNode);
+//            if (validateNode(node)) {
+//                try {
+//                    nodeMgr.addTempNode(node);
+//                } catch (InterruptedException e) {
+//                    p2pLOG.error("p2pMgr construct InterruptedException! " + node.toString(), e);
+//                    continue;
+//                }
+//                nodeMgr.seedIpAdd(node.getIpStr());
+//            }
+//        }
 
         // rem out for bug:
         // nodeMgr.loadPersistedNodes();

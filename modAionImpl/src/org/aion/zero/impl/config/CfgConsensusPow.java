@@ -161,7 +161,7 @@ public final class CfgConsensusPow extends CfgConsensus {
     }
 
     public byte getCpuMineThreads() {
-        int procs = Runtime.getRuntime().availableProcessors();
+        int procs = 1;
         return (byte) Math.min(procs, this.cpuMineThreads);
     }
 

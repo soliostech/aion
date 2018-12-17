@@ -28,6 +28,7 @@ import static org.aion.base.util.ByteUtil.toLEByteArray;
 import static org.aion.base.util.Hex.toHexString;
 
 import java.math.BigInteger;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.aion.base.util.NativeLoader;
 import org.aion.crypto.HashUtil;
@@ -99,44 +100,9 @@ public class Equihash {
      * Mine for a single nonce
      */
     public Solution mine(IAionBlock block, byte[] nonce) {
-
-        A0BlockHeader updateHeader = new A0BlockHeader(block.getHeader());
-
-        byte[] inputBytes = updateHeader.getMineHash();
-
-        BigInteger target = updateHeader.getPowBoundaryBI();
-
-        int[][] generatedSolutions;
-
-        // Convert byte to LE order (in place)
-        toLEByteArray(nonce);
-
-        // Get solutions for this nonce
-        generatedSolutions = getSolutionsForNonce(inputBytes, nonce);
-
-        // Increment number of solutions
-        this.totalSolGenerated.addAndGet(generatedSolutions.length);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Produced " + generatedSolutions.length + " solutions");
-        }
-
-        // Add nonce and solutions, hash and check if less than target
-
-        // Check each returned solution
-        for (int[] generatedSolution : generatedSolutions) {
-
-            // Verify if any of the solutions pass the difficulty filter, return if true.
-            byte[] minimal = EquiUtils.getMinimalFromIndices(generatedSolution, cBitLen);
-
-            byte[] validationBytes = merge(inputBytes, nonce, minimal);
-
-            // Found a valid solution
-            if (isValidBlock(validationBytes, target)) {
-                return new Solution(block, nonce, minimal);
-            }
-        }
-
-        return null;
+        byte[] minimal = new byte[1408];
+        ThreadLocalRandom.current().nextBytes(minimal);
+        return new Solution(block, nonce, minimal);
     }
 
     /**

@@ -56,11 +56,14 @@ import org.aion.api.server.pb.ApiAion0;
 import org.aion.api.server.pb.IHdlr;
 import org.aion.api.server.zmq.HdlrZmq;
 import org.aion.api.server.zmq.ProtocolProcessor;
+import org.aion.base.util.ByteUtil;
 import org.aion.crypto.ECKeyFac;
 import org.aion.crypto.HashUtil;
 import org.aion.evtmgr.EventMgrModule;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
+import org.aion.mcf.account.Account;
+import org.aion.mcf.account.AccountManager;
 import org.aion.mcf.account.Keystore;
 import org.aion.mcf.config.CfgApiRpc;
 import org.aion.mcf.config.CfgApiZmq;
@@ -117,15 +120,16 @@ public class Aion {
 
         // Check ZMQ server secure connect settings, generate keypair when the settings enabled and
         // can't find the keypair.
-        if (cfg.getApi().getZmq().getActive()
-                && cfg.getApi().getZmq().isSecureConnectEnabledEnabled()) {
-            try {
-                checkZmqKeyPair();
-            } catch (Exception e) {
-                System.out.println("Check zmq keypair fail! " + e.toString());
-                exit(1);
-            }
-        }
+        System.out.println("ZMQ (JavaAPI) is disabled in this build");
+//        if (cfg.getApi().getZmq().getActive()
+//                && cfg.getApi().getZmq().isSecureConnectEnabledEnabled()) {
+//            try {
+//                checkZmqKeyPair();
+//            } catch (Exception e) {
+//                System.out.println("Check zmq keypair fail! " + e.toString());
+//                exit(1);
+//            }
+//        }
 
         // UUID check
         String UUID = cfg.getId();
@@ -220,17 +224,14 @@ public class Aion {
         genLog.info(path);
         genLog.info(logo);
 
+        CfgAion.inst().getConsensus().setMining(true);
         IAionChain ac = AionFactory.create();
-
         IMineRunner nm = null;
+        nm = ac.getBlockMiner();
+        nm.delayedStartMining(3);
 
-        if (!cfg.getConsensus().isSeed()) {
-            nm = ac.getBlockMiner();
-        }
-
-        if (nm != null) {
-            nm.delayedStartMining(10);
-        }
+        // display test account addresses
+        getTestAccountAddresses();
 
         /*
          * Create JMX server and register in-flight config receiver MBean.  Commenting out for now
@@ -256,14 +257,14 @@ public class Aion {
         /*
          * Start Threads.
          */
-        Thread zmqThread = null;
-        ProtocolProcessor processor = null;
-        if (cfg.getApi().getZmq().getActive()) {
-            IHdlr handler = new HdlrZmq(new ApiAion0(ac));
-            processor = new ProtocolProcessor(handler, cfg.getApi().getZmq());
-            zmqThread = new Thread(processor, "zmq-api");
-            zmqThread.start();
-        }
+//        Thread zmqThread = null;
+//        ProtocolProcessor processor = null;
+//        if (cfg.getApi().getZmq().getActive()) {
+//            IHdlr handler = new HdlrZmq(new ApiAion0(ac));
+//            processor = new ProtocolProcessor(handler, cfg.getApi().getZmq());
+//            zmqThread = new Thread(processor, "zmq-api");
+//            zmqThread.start();
+//        }
 
         RpcServer rpcServer = null;
         if (cfg.getApi().getRpc().isActive()) {
@@ -344,7 +345,7 @@ public class Aion {
             }
         }
 
-        ShutdownThreadHolder holder = new ShutdownThreadHolder(zmqThread, nm, processor, rpcServer);
+        ShutdownThreadHolder holder = new ShutdownThreadHolder(null, nm, null, rpcServer);
 
         Runtime.getRuntime()
                 .addShutdownHook(
@@ -358,31 +359,31 @@ public class Aion {
                                         genLog.info("Shutdown RpcServer ... Done!");
                                     }
 
-                                    if (holder.pp != null) {
-                                        genLog.info("Shutting down zmq ProtocolProcessor");
-                                        try {
-                                            holder.pp.shutdown();
-                                            genLog.info("Shutdown zmq ProtocolProcessor... Done!");
-                                        } catch (InterruptedException e) {
-                                            genLog.info(
-                                                    "Shutdown zmq ProtocolProcessor failed! {}",
-                                                    e.getMessage());
-                                            Thread.currentThread().interrupt();
-                                        }
-                                    }
+//                                    if (holder.pp != null) {
+//                                        genLog.info("Shutting down zmq ProtocolProcessor");
+//                                        try {
+//                                            holder.pp.shutdown();
+//                                            genLog.info("Shutdown zmq ProtocolProcessor... Done!");
+//                                        } catch (InterruptedException e) {
+//                                            genLog.info(
+//                                                    "Shutdown zmq ProtocolProcessor failed! {}",
+//                                                    e.getMessage());
+//                                            Thread.currentThread().interrupt();
+//                                        }
+//                                    }
 
-                                    if (holder.zmqThread != null) {
-                                        genLog.info("Shutting down zmq thread");
-                                        try {
-                                            holder.zmqThread.interrupt();
-                                            genLog.info("Shutdown zmq thread... Done!");
-                                        } catch (Exception e) {
-                                            genLog.info(
-                                                    "Shutdown zmq thread failed! {}",
-                                                    e.getMessage());
-                                            Thread.currentThread().interrupt();
-                                        }
-                                    }
+//                                    if (holder.zmqThread != null) {
+//                                        genLog.info("Shutting down zmq thread");
+//                                        try {
+//                                            holder.zmqThread.interrupt();
+//                                            genLog.info("Shutdown zmq thread... Done!");
+//                                        } catch (Exception e) {
+//                                            genLog.info(
+//                                                    "Shutdown zmq thread failed! {}",
+//                                                    e.getMessage());
+//                                            Thread.currentThread().interrupt();
+//                                        }
+//                                    }
 
                                     if (holder.miner != null) {
                                         genLog.info("Shutting down sealer");
@@ -508,5 +509,14 @@ public class Aion {
         }
 
         return sslPass;
+    }
+
+    private static void getTestAccountAddresses() {
+        System.out.println("Autogenerated Test Accounts");
+        List<Account> accs = AccountManager.inst().getAccounts();
+        for (int i = 0; i < accs.size(); i++) {
+            System.out.println("[" + i + "] address: " + ByteUtil.toHexString(accs.get(i).getKey().getAddress())
+                    + " secretKey: " + ByteUtil.toHexString(accs.get(i).getKey().getPrivKeyBytes()));
+        }
     }
 }

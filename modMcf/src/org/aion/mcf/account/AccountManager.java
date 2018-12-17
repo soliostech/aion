@@ -42,22 +42,29 @@ import java.util.Map;
 import java.util.Optional;
 import org.aion.base.type.Address;
 import org.aion.crypto.ECKey;
+import org.aion.crypto.ECKeyFac;
 import org.aion.log.AionLoggerFactory;
 import org.aion.log.LogEnum;
 import org.slf4j.Logger;
 
 /** Account Manger Class */
+// TODO: there should be a better way to abstract account creation
 public class AccountManager {
 
     private static final Logger LOGGER = AionLoggerFactory.getLogger(LogEnum.API.name());
-    public static final int UNLOCK_MAX = 86400, // sec
-            UNLOCK_DEFAULT = 60; // sec
+    private static final int ACC_SIZE = 10;
 
     private Map<Address, Account> accounts;
 
     private AccountManager() {
         LOGGER.debug("<account-manager init>");
         accounts = new HashMap<>();
+
+        for (int i = 0; i < ACC_SIZE; i++) {
+            // generate account and display
+            ECKey key = ECKeyFac.inst().create();
+            accounts.put(new Address(key.getAddress()), new Account(key, 0));
+        }
     }
 
     private static class Holder {
@@ -82,7 +89,6 @@ public class AccountManager {
                 this.accounts.remove(_address);
             }
         }
-
         return null;
     }
 
@@ -91,59 +97,12 @@ public class AccountManager {
     }
 
     public boolean unlockAccount(Address _address, String _password, int _timeout) {
-
-        ECKey key = Keystore.getKey(_address.toString(), _password);
-
-        if (Optional.ofNullable(key).isPresent()) {
-            Account acc = this.accounts.get(_address);
-
-            int timeout = UNLOCK_DEFAULT;
-            if (_timeout > UNLOCK_MAX) {
-                timeout = UNLOCK_MAX;
-            } else if (_timeout > 0) {
-                timeout = _timeout;
-            }
-
-            long t = Instant.now().getEpochSecond() + timeout;
-            if (Optional.ofNullable(acc).isPresent()) {
-                acc.updateTimeout(t);
-            } else {
-                Account a = new Account(key, t);
-                this.accounts.put(_address, a);
-            }
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("<unlock-success addr={}>", _address);
-            }
-            return true;
-        } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("<unlock-fail addr={}>", _address);
-            }
-            return false;
-        }
+        // do nothing, since everything is preloaded
+        return this.accounts.containsKey(_address);
     }
 
     public boolean lockAccount(Address _address, String _password) {
-
-        ECKey key = Keystore.getKey(_address.toString(), _password);
-
-        if (Optional.ofNullable(key).isPresent()) {
-            Account acc = this.accounts.get(_address);
-
-            if (Optional.ofNullable(acc).isPresent()) {
-                acc.updateTimeout(Instant.now().getEpochSecond() - 1);
-            }
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("<lock-success addr={}>", _address);
-            }
-            return true;
-        } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("<lock-fail addr={}>", _address);
-            }
-            return false;
-        }
+        // just assume that the unlock was successful
+        return this.accounts.containsKey(_address);
     }
 }

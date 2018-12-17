@@ -156,13 +156,12 @@ public class EquihashMiner extends AbstractMineRunner<AionBlock> {
                     STATUS_INTERVAL,
                     TimeUnit.SECONDS);
 
-            for (int i = 0; i < cpuThreads; i++) {
-                Thread t = new Thread(this::mine, "miner-" + (i + 1));
+            // Modified to only have one thread executing
+            Thread t = new Thread(this::mine, "miner-1");
 
-                t.start();
-                LOG.info("sealer {} starting.", i + 1);
-                threads.add(t);
-            }
+            t.start();
+            LOG.info("sealer {} starting.", 1);
+            threads.add(t);
         }
     }
 
@@ -202,12 +201,18 @@ public class EquihashMiner extends AbstractMineRunner<AionBlock> {
         while (!Thread.currentThread().isInterrupted()) {
             if ((block = miningBlock) == null) {
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(5000L);
                 } catch (InterruptedException e) {
                     break;
                 }
             } else {
-
+                try {
+                    Thread.sleep(5000L);
+                } catch (InterruptedException e) {
+                    // interrupt current thread, but don't do anything
+                    Thread.currentThread().interrupt();
+                    break;
+                }
                 // A new array must be created each loop
                 // If reference is reused the array contents may be changed
                 // before block sealed causing validation to fail
@@ -243,22 +248,19 @@ public class EquihashMiner extends AbstractMineRunner<AionBlock> {
      */
     @Override
     public void delayedStartMining(int sec) {
-        if (cfg.getConsensus().getMining()) {
-            LOG.info("<delayed-start-sealing>");
-            Timer t = new Timer();
-            t.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            if (cfg.getConsensus().getMining()) {
-                                startMining();
-                            }
+        LOG.info("sealing always enabled with 1 mining thread in test build");
+        LOG.info("<delayed-start-sealing>");
+        Timer t = new Timer();
+        t.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        if (cfg.getConsensus().getMining()) {
+                            startMining();
                         }
-                    },
-                    sec * 1000);
-        } else {
-            LOG.info("<sealing-disabled>");
-        }
+                    }
+                },
+                sec * 1000);
     }
 
     /** This miner will listen to the ON_BLOCK_TEMPLATE event from the consensus handler. */

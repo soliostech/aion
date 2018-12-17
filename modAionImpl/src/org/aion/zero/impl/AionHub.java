@@ -201,10 +201,6 @@ public class AionHub {
 
         registerCallback();
 
-        if (!forTest) {
-            p2pMgr.run();
-        }
-
         ((AionPendingStateImpl) this.mempool).setP2pMgr(this.p2pMgr);
 
         this.pow = new AionPoW();
