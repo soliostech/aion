@@ -49,7 +49,11 @@ public final class TaskRequestActiveNodes implements Runnable {
             if (p2pLOG.isTraceEnabled()) {
                 p2pLOG.trace("TaskRequestActiveNodes: {}", node.toString());
             }
-            this.mgr.send(node.getIdHash(), node.getIdShort(), reqActiveNodesMsg);
+            try {
+                this.mgr.send(node.getIdHash(), node.getIdShort(), reqActiveNodesMsg);
+            } catch (Exception e) {
+                p2pLOG.error("TaskRequestActiveNodes exception.", e);
+            }
         }
     }
 }

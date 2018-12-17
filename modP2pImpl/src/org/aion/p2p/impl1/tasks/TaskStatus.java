@@ -49,7 +49,14 @@ public class TaskStatus implements Runnable {
     @Override
     public void run() {
         Thread.currentThread().setName("p2p-ts");
-        String status = this.nodeMgr.dumpNodeInfo(this.selfShortId, p2pLOG.isDebugEnabled());
+
+        String status;
+        try {
+            status = this.nodeMgr.dumpNodeInfo(this.selfShortId, p2pLOG.isDebugEnabled());
+        } catch (Exception e) {
+            p2pLOG.error("p2p-ts exception.", e);
+            return;
+        }
 
         if (p2pLOG.isDebugEnabled()) {
             p2pLOG.debug(status);
