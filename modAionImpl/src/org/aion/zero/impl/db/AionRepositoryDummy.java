@@ -175,7 +175,12 @@ public class AionRepositoryDummy extends AionRepositoryImpl {
             createAccount(addr);
             details = getContractDetails(addr);
         }
-
+        if (value.isZero()) {
+            // TODO: remove when integrating the AVM
+            // used to ensure FVM correctness
+            throw new IllegalArgumentException(
+                    "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
+        }
         details.put(key, value);
         detailsDB.put(addr.toByteArrayWrapper(), details);
     }

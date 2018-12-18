@@ -248,7 +248,7 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
         for (ByteArrayWrapper key : storage.keySet()) {
             ByteArrayWrapper value = storage.get(key);
             if (value != null) {
-                origContract.put(key, storage.get(key));
+                origContract.put(key, value);
             } else {
                 origContract.delete(key);
             }
