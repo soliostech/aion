@@ -98,7 +98,7 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
         if (value == null) {
             // used to ensure correctness of use
             throw new IllegalArgumentException(
-                "Put with null values is not allowed. Explicit call to delete is necessary.");
+                    "Put with null values is not allowed. Explicit call to delete is necessary.");
         }
 
         if (value.isZero()) {
@@ -137,9 +137,10 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
      */
     @Override
     public ByteArrayWrapper get(ByteArrayWrapper key) {
-        ByteArrayWrapper result = DataWord.ZERO.toWrapper();
+        ByteArrayWrapper result = null;
 
         byte[] data = storageTrie.get(key.getData());
+
         // TODO: VM must handle padding
         if (data.length >= DoubleDataWord.BYTES) {
             result = new DoubleDataWord(RLP.decode2(data).get(0).getRLPData()).toWrapper();

@@ -107,8 +107,9 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
                 return null;
             }
             value = origContract.get(key);
+
             // TODO: the VM must pad the given ZERO value if expecting a fixed size byte array
-            storage.put(key.copy(), value == null ? null : value.copy());
+            storage.put(key.copy(), value == null || value.isZero() ? null : value.copy());
         }
 
         return value;

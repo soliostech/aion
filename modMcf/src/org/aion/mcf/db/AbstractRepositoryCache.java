@@ -353,6 +353,7 @@ public abstract class AbstractRepositoryCache<BSB extends IBlockStoreBase<?, ?>>
         if (value == null) {
             return null;
         }
+        // TODO
         return (value.isZero()) ? null : value;
     }
 
