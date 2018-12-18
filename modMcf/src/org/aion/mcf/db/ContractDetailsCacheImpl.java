@@ -24,8 +24,10 @@ package org.aion.mcf.db;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.aion.base.db.IByteArrayKeyValueStore;
 import org.aion.base.db.IContractDetails;
 import org.aion.base.util.ByteArrayWrapper;
@@ -35,6 +37,7 @@ import org.aion.vm.api.interfaces.Address;
 public class ContractDetailsCacheImpl extends AbstractContractDetails {
 
     private Map<ByteArrayWrapper, ByteArrayWrapper> storage = new HashMap<>();
+    private Set<ByteArrayWrapper> deleted = new HashSet<>();
 
     public IContractDetails origContract;
 
@@ -53,6 +56,7 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
         ContractDetailsCacheImpl copy = new ContractDetailsCacheImpl(cache.origContract);
         copy.setCodes(new HashMap<>(cache.getCodes()));
         copy.storage = new HashMap<>(cache.storage);
+        copy.deleted = new HashSet<>(cache.deleted);
         copy.setDirty(cache.isDirty());
         copy.setDeleted(cache.isDeleted());
         copy.prune = cache.prune;
@@ -69,6 +73,11 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
      */
     @Override
     public void put(ByteArrayWrapper key, ByteArrayWrapper value) {
+        if (value == null) {
+            // used to ensure correctness of use
+            throw new IllegalArgumentException(
+                    "Put with null values is not allowed. Explicit call to delete is necessary.");
+        }
         if (value.isZero()) {
             // TODO: remove when integrating the AVM
             // used to ensure FVM correctness
@@ -76,13 +85,16 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
                     "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
         }
 
+        if (deleted.contains(key)) {
+            deleted.remove(key);
+        }
         storage.put(key, value);
         setDirty(true);
     }
 
     @Override
     public void delete(ByteArrayWrapper key) {
-        storage.put(key, null);
+        deleted.add(key);
         setDirty(true);
     }
 
@@ -94,19 +106,32 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
      */
     @Override
     public ByteArrayWrapper get(ByteArrayWrapper key) {
-        ByteArrayWrapper value = storage.get(key);
-        if (value != null) {
-            value = value.copy();
-        } else {
-            if (origContract == null) {
-                return null;
-            }
-            value = origContract.get(key);
-            // TODO: the VM must pad the given ZERO value if expecting a fixed size byte array
-            storage.put(key.copy(), value == null ? null : value.copy());
+        // TODO: clean up copies
+        // check for deleted keys first
+        if (deleted.contains(key)) {
+            return null;
         }
 
-        return value;
+        // check for stored keys
+        ByteArrayWrapper value = storage.get(key);
+        if (value != null) {
+            return value.copy();
+        }
+
+        // check for inherited keys
+        if (origContract == null) {
+            return null;
+        } else {
+            value = origContract.get(key);
+            if (value == null) {
+                deleted.add(key.copy());
+                return null;
+            } else {
+                // TODO: the VM must pad the given ZERO value if expecting a fixed size byte array
+                storage.put(key.copy(), value.copy());
+                return value.copy();
+            }
+        }
     }
 
     /**
@@ -145,12 +170,21 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
         } else {
             for (ByteArrayWrapper key : keys) {
                 ByteArrayWrapper value = get(key);
+                if (value == null) {
+                    // used to ensure correctness of use
+                    throw new IllegalArgumentException(
+                            "Put with null values is not allowed. Explicit call to delete is necessary.");
+                }
+                if (value.isZero()) {
+                    // TODO: remove when integrating the AVM
+                    // used to ensure FVM correctness
+                    throw new IllegalArgumentException(
+                            "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
+                }
 
                 // we check if the value is not null,
                 // cause we keep all historical keys
-                if (value != null) {
-                    storage.put(key, value);
-                }
+                storage.put(key, value);
             }
         }
 
@@ -168,9 +202,7 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
     @Override
     public void setStorage(
             List<ByteArrayWrapper> storageKeys, List<ByteArrayWrapper> storageValues) {
-
         for (int i = 0; i < storageKeys.size(); ++i) {
-
             ByteArrayWrapper key = storageKeys.get(i);
             ByteArrayWrapper value = storageValues.get(i);
 
@@ -231,13 +263,12 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
             return;
         }
 
+        for (ByteArrayWrapper key : deleted) {
+            origContract.delete(key);
+        }
+
         for (ByteArrayWrapper key : storage.keySet()) {
-            ByteArrayWrapper value = storage.get(key);
-            if (value != null) {
-                origContract.put(key, storage.get(key));
-            } else {
-                origContract.delete(key);
-            }
+            origContract.put(key, storage.get(key));
         }
 
         if (origContract instanceof AbstractContractDetails) {
