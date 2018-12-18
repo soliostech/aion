@@ -158,7 +158,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
 
         // Test on a contract address that looks real, uses TRS prefix.
         byte[] phony = acct.toBytes();
@@ -167,7 +167,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -178,7 +178,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -189,7 +189,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -200,7 +200,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getTrueContractOutput(), res.getOutput());
+        assertArrayEquals(getTrueContractOutput(), res.getReturnData());
     }
 
     // <------------------------------------IS LOCKED TRS TESTS------------------------------------>
@@ -233,7 +233,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
 
         // Test on a contract address that looks real, uses TRS prefix.
         byte[] phony = acct.toBytes();
@@ -242,7 +242,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -253,7 +253,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -264,7 +264,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getTrueContractOutput(), res.getOutput());
+        assertArrayEquals(getTrueContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -275,7 +275,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getTrueContractOutput(), res.getOutput());
+        assertArrayEquals(getTrueContractOutput(), res.getReturnData());
     }
 
     // <------------------------------IS DIR DEPO ENABLED TRS TESTS-------------------------------->
@@ -308,7 +308,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
 
         // Test on a contract address that looks real, uses TRS prefix.
         byte[] phony = acct.toBytes();
@@ -317,7 +317,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -328,7 +328,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getFalseContractOutput(), res.getOutput());
+        assertArrayEquals(getFalseContractOutput(), res.getReturnData());
     }
 
     @Test
@@ -339,7 +339,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(acct).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertArrayEquals(getTrueContractOutput(), res.getOutput());
+        assertArrayEquals(getTrueContractOutput(), res.getReturnData());
     }
 
     // <--------------------------------------PERIOD TESTS----------------------------------------->
@@ -382,7 +382,7 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodInput(contract);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        assertEquals(BigInteger.ZERO, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ZERO, new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -394,7 +394,7 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodInput(contract);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        assertEquals(BigInteger.ZERO, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ZERO, new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -406,7 +406,7 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodInput(contract);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        assertEquals(BigInteger.ZERO, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ZERO, new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -418,19 +418,19 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodInput(contract);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period1 = new BigInteger(res.getOutput()).intValue();
+        int period1 = new BigInteger(res.getReturnData()).intValue();
 
         // Now we should be in period 1 forever.
         AbstractTRS trs = newTRSqueryContract(AION);
         mockBlockchain(getContractTimestamp(trs, contract) + 2);
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period2 = new BigInteger(res.getOutput()).intValue();
+        int period2 = new BigInteger(res.getReturnData()).intValue();
 
         mockBlockchain(getContractTimestamp(trs, contract) + 5);
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period3 = new BigInteger(res.getOutput()).intValue();
+        int period3 = new BigInteger(res.getReturnData()).intValue();
 
         assertEquals(0, period1);
         assertTrue(period2 > period1);
@@ -450,18 +450,18 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodInput(contract);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period1 = new BigInteger(res.getOutput()).intValue();
+        int period1 = new BigInteger(res.getReturnData()).intValue();
 
         // We are in last period now.
         mockBlockchain(getContractTimestamp(trs, contract) + 4);
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period2 = new BigInteger(res.getOutput()).intValue();
+        int period2 = new BigInteger(res.getReturnData()).intValue();
 
         mockBlockchain(getContractTimestamp(trs, contract) + 9);
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        int period3 = new BigInteger(res.getOutput()).intValue();
+        int period3 = new BigInteger(res.getReturnData()).intValue();
 
         assertTrue(period1 > 0);
         assertTrue(period2 > period1);
@@ -535,7 +535,7 @@ public class TRSqueryContractTest extends TRShelpers {
         byte[] input = getPeriodAtInput(contract, numBlocks);
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-        assertEquals(BigInteger.ZERO, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ZERO, new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -552,7 +552,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(expectedPeriod, new BigInteger(res.getOutput()));
+        assertEquals(expectedPeriod, new BigInteger(res.getReturnData()));
 
         blockNum = 2;
         timestamp++;
@@ -562,7 +562,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(expectedPeriod, new BigInteger(res.getOutput()));
+        assertEquals(expectedPeriod, new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -584,7 +584,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(BigInteger.valueOf(periods), new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.valueOf(periods), new BigInteger(res.getReturnData()));
 
         blockNum = numBlocks;
         timestamp += 15;
@@ -593,7 +593,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(BigInteger.valueOf(periods), new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.valueOf(periods), new BigInteger(res.getReturnData()));
     }
 
     @Test
@@ -611,7 +611,7 @@ public class TRSqueryContractTest extends TRShelpers {
         PrecompiledTransactionResult res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(BigInteger.ONE, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ONE, new BigInteger(res.getReturnData()));
 
         blockNum = numBlocks;
         timestamp += 4;
@@ -620,7 +620,7 @@ public class TRSqueryContractTest extends TRShelpers {
         res = newTRSqueryContract(AION).execute(input, COST);
         assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
         assertEquals(0, res.getEnergyRemaining());
-        assertEquals(BigInteger.ONE, new BigInteger(res.getOutput()));
+        assertEquals(BigInteger.ONE, new BigInteger(res.getReturnData()));
     }
 
     // <-------------------------AVAILABLE FOR WITHDRAWAL AT TRS TESTS----------------------------->
@@ -725,7 +725,7 @@ public class TRSqueryContractTest extends TRShelpers {
         for (AionAddress acc : contributors) {
             PrecompiledTransactionResult res = newTRSqueryContract(acc).execute(input, COST);
             assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-            BigDecimal frac = new BigDecimal(new BigInteger(res.getOutput())).movePointLeft(18);
+            BigDecimal frac = new BigDecimal(new BigInteger(res.getReturnData())).movePointLeft(18);
             assertEquals(expectedFraction, frac);
         }
     }
@@ -765,7 +765,7 @@ public class TRSqueryContractTest extends TRShelpers {
         for (AionAddress acc : contributors) {
             PrecompiledTransactionResult res = newTRSqueryContract(acc).execute(input, COST);
             assertEquals(PrecompiledResultCode.SUCCESS, res.getResultCode());
-            BigDecimal frac = new BigDecimal(new BigInteger(res.getOutput())).movePointLeft(18);
+            BigDecimal frac = new BigDecimal(new BigInteger(res.getReturnData())).movePointLeft(18);
             assertEquals(expectedFraction, frac);
         }
     }

@@ -78,7 +78,6 @@ import org.aion.evtmgr.impl.es.EventExecuteService;
 import org.aion.evtmgr.impl.evt.EventBlock;
 import org.aion.evtmgr.impl.evt.EventTx;
 import org.aion.mcf.account.Keystore;
-import org.aion.mcf.vm.types.Log;
 import org.aion.p2p.INode;
 import org.aion.solidity.Abi;
 import org.aion.vm.api.interfaces.Address;
@@ -144,7 +143,7 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         txr.getLogInfoList()
                                 .forEach(
                                         bi ->
-                                                bi.getLogTopics()
+                                                bi.getTopics()
                                                         .forEach(
                                                                 lg -> {
                                                                     if (_fltr.isFor(
@@ -172,10 +171,10 @@ public class ApiAion0 extends ApiAion implements IApiAion {
 
                                                                         EvtContract ec =
                                                                                 new EvtContract(
-                                                                                        bi.getLogSourceAddress()
+                                                                                        bi.getSourceAddress()
                                                                                                 .toBytes(),
                                                                                         bi
-                                                                                                .getLogData(),
+                                                                                                .getData(),
                                                                                         blk
                                                                                                 .getHash(),
                                                                                         blk
@@ -2577,15 +2576,15 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                         .map(
                                 log -> {
                                     List<String> topics = new ArrayList<>();
-                                    for (int i = 0; i < log.getLogTopics().size(); i++) {
-                                        topics.add(TypeConverter.toJsonHex(log.getLogTopics().get(i)));
+                                    for (int i = 0; i < log.getTopics().size(); i++) {
+                                        topics.add(TypeConverter.toJsonHex(log.getTopics().get(i)));
                                     }
 
                                     return Message.t_LgEle
                                             .newBuilder()
-                                            .setData(ByteString.copyFrom(log.getLogData()))
+                                            .setData(ByteString.copyFrom(log.getData()))
                                             .setAddress(
-                                                    ByteString.copyFrom(log.getLogSourceAddress().toBytes()))
+                                                    ByteString.copyFrom(log.getSourceAddress().toBytes()))
                                             .addAllTopics(topics)
                                             .build();
                                 })
@@ -2703,10 +2702,10 @@ public class ApiAion0 extends ApiAion implements IApiAion {
         JSONArray logs = new JSONArray();
         for (IExecutionLog l : _logs) {
             JSONArray log = new JSONArray();
-            log.put(l.getLogSourceAddress().toString()); // address
-            log.put(ByteUtil.toHexString(l.getLogData())); // data
+            log.put(l.getSourceAddress().toString()); // address
+            log.put(ByteUtil.toHexString(l.getData())); // data
             JSONArray topics = new JSONArray();
-            for (byte[] topic : l.getLogTopics()) {
+            for (byte[] topic : l.getTopics()) {
                 topics.put(ByteUtil.toHexString(topic));
             }
             log.put(topics); // topics
@@ -2839,13 +2838,13 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                                                                                                     new ArrayList<>();
                                                                                     for (int i = 0;
                                                                                             i
-                                                                                                    < log.getLogTopics()
+                                                                                                    < log.getTopics()
                                                                                                             .size();
                                                                                             i++) {
                                                                                         topics.add(
                                                                                                 TypeConverter
                                                                                                         .toJsonHex(
-                                                                                                                log.getLogTopics()
+                                                                                                                log.getTopics()
                                                                                                                         .get(
                                                                                                                                 i)));
                                                                                     }
@@ -2857,11 +2856,11 @@ public class ApiAion0 extends ApiAion implements IApiAion {
                                                                                                     ByteString
                                                                                                             .copyFrom(
                                                                                                                     log
-                                                                                                                            .getLogData()))
+                                                                                                                            .getData()))
                                                                                             .setAddress(
                                                                                                     ByteString
                                                                                                             .copyFrom(
-                                                                                                                    log.getLogSourceAddress()
+                                                                                                                    log.getSourceAddress()
                                                                                                                             .toBytes()))
                                                                                             .addAllTopics(
                                                                                                     topics)

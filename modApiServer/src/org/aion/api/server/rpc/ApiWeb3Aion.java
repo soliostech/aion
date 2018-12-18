@@ -89,7 +89,6 @@ import org.aion.mcf.config.CfgTx;
 import org.aion.mcf.core.AccountState;
 import org.aion.mcf.core.ImportResult;
 import org.aion.mcf.vm.types.DataWord;
-import org.aion.mcf.vm.types.Log;
 import org.aion.p2p.INode;
 import org.aion.vm.api.interfaces.IExecutionLog;
 import org.aion.zero.impl.AionBlockchainImpl;
@@ -2167,10 +2166,10 @@ public class ApiWeb3Aion extends ApiAion {
         JSONArray logs = new JSONArray();
         for (IExecutionLog l : txInfo.getReceipt().getLogInfoList()) {
             JSONObject log = new JSONObject();
-            log.put("address", l.getLogSourceAddress().toString());
-            log.put("data", TypeConverter.toJsonHex(l.getLogData()));
+            log.put("address", l.getSourceAddress().toString());
+            log.put("data", TypeConverter.toJsonHex(l.getData()));
             JSONArray topics = new JSONArray();
-            for (byte[] topic : l.getLogTopics()) {
+            for (byte[] topic : l.getTopics()) {
                 topics.put(TypeConverter.toJsonHex(topic));
             }
             log.put("topics", topics);
