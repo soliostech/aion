@@ -69,6 +69,11 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
      */
     @Override
     public void put(ByteArrayWrapper key, ByteArrayWrapper value) {
+        if (value == null) {
+            // used to ensure correctness of use
+            throw new IllegalArgumentException(
+                    "Put with null values is not allowed. Explicit call to delete is necessary.");
+        }
         if (value.isZero()) {
             // TODO: remove when integrating the AVM
             // used to ensure FVM correctness
@@ -168,13 +173,15 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
     @Override
     public void setStorage(
             List<ByteArrayWrapper> storageKeys, List<ByteArrayWrapper> storageValues) {
-
         for (int i = 0; i < storageKeys.size(); ++i) {
-
             ByteArrayWrapper key = storageKeys.get(i);
             ByteArrayWrapper value = storageValues.get(i);
 
-            put(key, value);
+            if (value != null) {
+                put(key, value);
+            } else {
+                delete(key);
+            }
         }
     }
 
@@ -186,7 +193,14 @@ public class ContractDetailsCacheImpl extends AbstractContractDetails {
     @Override
     public void setStorage(Map<ByteArrayWrapper, ByteArrayWrapper> storage) {
         for (Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry : storage.entrySet()) {
-            put(entry.getKey(), entry.getValue());
+            ByteArrayWrapper key = entry.getKey();
+            ByteArrayWrapper value = entry.getValue();
+
+            if (value != null) {
+                put(key, value);
+            } else {
+                delete(key);
+            }
         }
     }
 

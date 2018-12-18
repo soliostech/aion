@@ -467,7 +467,7 @@ public class IContractDetailsTest {
     private void doSetZeroValueViaStorageTest(IContractDetails cache) {
         Map<ByteArrayWrapper, ByteArrayWrapper> storage = new HashMap<>();
         ByteArrayWrapper key = new DataWord(RandomUtils.nextBytes(DataWord.BYTES)).toWrapper();
-        storage.put(key, DataWord.ZERO.toWrapper());
+        storage.put(key, null);
         cache.setStorage(storage);
         checkGetNonExistentPairing(cache, key);
     }
@@ -499,7 +499,7 @@ public class IContractDetailsTest {
         assertEquals(size, values.size());
         for (int i = 0; i < size; i++) {
             if ((i + 1) % n == 0) {
-                storage.put(keys.get(i), DoubleDataWord.ZERO.toWrapper());
+                storage.put(keys.get(i), null);
             } else {
                 storage.put(keys.get(i), values.get(i));
             }

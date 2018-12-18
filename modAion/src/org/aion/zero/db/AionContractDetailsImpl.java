@@ -95,6 +95,12 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
         // We strip leading zeros of a DataWord but not a DoubleDataWord so that when we call get
         // we can differentiate between the two.
 
+        if (value == null) {
+            // used to ensure correctness of use
+            throw new IllegalArgumentException(
+                "Put with null values is not allowed. Explicit call to delete is necessary.");
+        }
+
         if (value.isZero()) {
             // TODO: remove when integrating the AVM
             // used to ensure FVM correctness
@@ -248,9 +254,16 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
             for (ByteArrayWrapper key : keys) {
                 ByteArrayWrapper value = get(key);
 
+                if (value.isZero()) {
+                    // TODO: remove when integrating the AVM
+                    // used to ensure FVM correctness
+                    throw new IllegalArgumentException(
+                            "Put with zero values is not allowed for the FVM. Explicit call to delete is necessary.");
+                }
+
                 // we check if the value is not null,
                 // cause we keep all historical keys
-                if ((value != null) && (!value.isZero())) {
+                if (value != null) {
                     storage.put(key, value);
                 }
             }
@@ -271,7 +284,14 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
     public void setStorage(
             List<ByteArrayWrapper> storageKeys, List<ByteArrayWrapper> storageValues) {
         for (int i = 0; i < storageKeys.size(); ++i) {
-            put(storageKeys.get(i), storageValues.get(i));
+            ByteArrayWrapper key = storageKeys.get(i);
+            ByteArrayWrapper value = storageValues.get(i);
+
+            if (value != null) {
+                put(key, value);
+            } else {
+                delete(key);
+            }
         }
     }
 
@@ -282,8 +302,15 @@ public class AionContractDetailsImpl extends AbstractContractDetails {
      */
     @Override
     public void setStorage(Map<ByteArrayWrapper, ByteArrayWrapper> storage) {
-        for (ByteArrayWrapper key : storage.keySet()) {
-            put(key, storage.get(key));
+        for (Map.Entry<ByteArrayWrapper, ByteArrayWrapper> entry : storage.entrySet()) {
+            ByteArrayWrapper key = entry.getKey();
+            ByteArrayWrapper value = entry.getValue();
+
+            if (value != null) {
+                put(key, value);
+            } else {
+                delete(key);
+            }
         }
     }
 
